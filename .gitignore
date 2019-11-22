@@ -3,7 +3,10 @@
 .Rapp.history
 
 # Session Data files
-.RData
+*.RData
+
+# output folder
+*/model_results
 
 # Example code in package build process
 *-Ex.R
