@@ -42,6 +42,12 @@ for(ss in speciestemp){
                                    regions = c("continental","stratum","national", "prov_state","bcr"),
                                    startyear = fy,
                                    max_backcast = 5)
+  inds2 = generate_regional_indices(jags_mod = jags_mod,
+                                   jags_data = jags_data,
+                                   quantiles = qs,
+                                   regions = c("prov_state"),
+                                   startyear = fy,
+                                   max_backcast = 5)
   
   trs = generate_regional_trends(indices = inds,
                                  Min_year = fy,
@@ -58,12 +64,12 @@ for(ss in speciestemp){
   pdf(paste0("output/geofacets_strata/",ss,"_geofacet_strata.pdf"),
       width = 11,
       height = 8.5)
-  gf = geofacet_plot(indices_list = inds,
-                     select = T,
+  gf = geofacet_plot(indices_list = inds2,
+                     select = F,
                      stratify_by = "bbs_cws",
                      multiple = F,
-                     trends = trs,
-                     slope = T,
+                     trends = NULL,
+                     #slope = T,
                      species = ss)
   print(gf)
   dev.off()

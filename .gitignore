@@ -6,7 +6,8 @@
 *.RData
 
 # output folder
-*/model_results
+*model_results/
+*output/
 
 # Example code in package build process
 *-Ex.R
