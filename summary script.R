@@ -42,12 +42,12 @@ for(ss in speciestemp){
                                    regions = c("continental","stratum","national", "prov_state","bcr"),
                                    startyear = fy,
                                    max_backcast = 5)
-  inds2 = generate_regional_indices(jags_mod = jags_mod,
-                                   jags_data = jags_data,
-                                   quantiles = qs,
-                                   regions = c("prov_state"),
-                                   startyear = fy,
-                                   max_backcast = 5)
+  # inds2 = generate_regional_indices(jags_mod = jags_mod,
+  #                                  jags_data = jags_data,
+  #                                  quantiles = qs,
+  #                                  regions = c("prov_state"),
+  #                                  startyear = fy,
+  #                                  max_backcast = 5)
   
   trs = generate_regional_trends(indices = inds,
                                  Min_year = fy,
@@ -61,15 +61,15 @@ for(ss in speciestemp){
   ###############################################################
   ###############################################################
   ### geofacet plots
-  pdf(paste0("output/geofacets_strata/",ss,"_geofacet_strata.pdf"),
+  pdf(paste0("output/geofacets_strata/",ss,"_",fy,"_geofacet_strata.pdf"),
       width = 11,
       height = 8.5)
-  gf = geofacet_plot(indices_list = inds2,
-                     select = F,
+  gf = geofacet_plot(indices_list = inds,
+                     select = T,
                      stratify_by = "bbs_cws",
                      multiple = F,
                      trends = NULL,
-                     #slope = T,
+                     slope = trs,
                      species = ss)
   print(gf)
   dev.off()
@@ -80,8 +80,30 @@ for(ss in speciestemp){
   ###############################################################
   ### index plots, all single pdf for a species and time-series
   
+  ipp = plot_strata_indices(indices_list = inds,
+                            min_year = fy,
+                            add_observed_means = F,
+                            species = ss)
+  
+  pdf(paste0("output/Indices_comparison/",ss,"_",fy,"_Indices_comparison.pdf"),
+      width = 8.5,
+      height = 6)
+  print(ipp)
+  dev.off()
   
   
+  
+  ###### generate the require ggplot components to add to each ipp within a loop
+  
+  
+  pdf(paste0("output/Indices_comparison/",ss,"_",fy,"_Indices_comparison.pdf"),
+      width = 8.5,
+      height = 6)
+  for(ss in 1:jags_data$nstrata){
+  print(ipp)
+    
+  }
+  dev.off()
   
   ###############################################################
   ###############################################################
