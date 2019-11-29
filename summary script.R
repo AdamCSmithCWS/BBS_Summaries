@@ -7,26 +7,26 @@ library(pacman)
 p_load(char = c("bbsBayes","ggplot2","ggrepel","RColorBrewer"),character.only = T)
 
 
-dat_strat = stratify(by = "bbs_cws")
+# dat_strat = stratify(by = "bbs_cws")
+# 
+# 
+# species_to_run = unique(dat_strat$species_strat$english)
 
 
-species_to_run = unique(dat_strat$species_strat$english)
-
-
-speciestemp = c("Bobolink","McCown's Longspur")
+speciestemp = c("Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee")
 
 
 # qs = c(0.025,0.05,0.95,0.975)
 YYYY = 2018
 
 for(ss in speciestemp){
-  
+ for(noise in c("heavy_tailed","normal_tailed")){ 
   rm(list = c("jags_mod_full.RData","jags_data.RData"))
   
-  load(paste0("model_results/",ss,"/jags_mod_full.RData"))
-  load(paste0("model_results/",ss,"/jags_data.RData"))
+  load(paste0("model_results/",noise,"/",ss,"/jags_mod_full.RData"))
+  load(paste0("model_results/",noise,"/",ss,"/jags_data.RData"))
   
-  
+  strat = jags_mod$stratify_by
   
   
   ###############################################################
@@ -35,11 +35,13 @@ for(ss in speciestemp){
   #### loop for short-term and long-term indices and trends
   
   
-  for(fy in c(1970,2008)){
+  for(fy in c(1970)){
+    plot_header = paste(ss,noise,fy,sep = "_")
+    
   inds = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
-                                   regions = c("continental","stratum","national", "prov_state","bcr"),
+                                   regions = c("continental","national", "prov_state","bcr","stratum"),
                                    startyear = fy,
                                    max_backcast = 5)
   # inds2 = generate_regional_indices(jags_mod = jags_mod,
@@ -61,7 +63,7 @@ for(ss in speciestemp){
   ###############################################################
   ###############################################################
   ### geofacet plots
-  pdf(paste0("output/geofacets_strata/",ss,"_",fy,"_geofacet_strata.pdf"),
+  pdf(paste0("output/geofacets_strata/",plot_header,"_geofacet_strata.pdf"),
       width = 11,
       height = 8.5)
   gf = geofacet_plot(indices_list = inds,
@@ -85,7 +87,7 @@ for(ss in speciestemp){
                             add_observed_means = F,
                             species = ss)
   
-  pdf(paste0("output/Indices/",ss,"_",fy,"_Indices.pdf"),
+  pdf(paste0("output/Indices/",plot_header,"_Indices.pdf"),
       width = 8.5,
       height = 6)
   print(ipp)
@@ -96,7 +98,7 @@ for(ss in speciestemp){
   ###### generate the require ggplot components to add to each ipp within a loop
   
   
-  pdf(paste0("output/Indices_comparison/",ss,"_",fy,"_Indices_comparison.pdf"),
+  pdf(paste0("output/Indices_comparison/",plot_header,"_Indices_comparison.pdf"),
       width = 8.5,
       height = 6)
   
@@ -137,6 +139,12 @@ for(ss in speciestemp){
   ###############################################################
   ### trend maps
   
+  pdf(paste0("output/Trend_maps/",plot_header,"_trend_map.pdf"),
+      width = 8.5,
+      height = 6)
+  pp = generate_map(trend = trs,select = T,stratify_by = strat,slope = T)
+  print(pp)
+  dev.off()
   
   
  
@@ -153,7 +161,41 @@ for(ss in speciestemp){
   ###############################################################
   ### COSEWIC output
   
+  fy2 = min(1995,fy)
+  indscos = generate_regional_indices(jags_mod = jags_mod,
+                                   jags_data = jags_data,
+                                   #quantiles = qs,
+                                   regions = c("continental","national"),
+                                   startyear = fy2,
+                                   max_backcast = 5)
 
+  
+  for(ly2 in c((fy2+10):YYYY)){
+  trst = generate_regional_trends(indices = indscos,
+                                 Min_year = ly2-10,
+                                 Max_year = ly2,
+                                 #quantiles = qs,
+                                 slope = T,
+                                 prob_decrease = c(0,25,30,50),
+                                 prob_increase = c(0,33,100))
+  if(ly2 == fy2+10){
+    tcos = trst
+  }else{
+    tcos = rbind(tcos,trst)
+  }
+  
+  }
+
+  pdf(paste0("output/Rolling_Trends/",plot_header,"_Rolling_Trends.pdf"),
+      width = 8.5,
+      height = 6)
+  for(rg in unique(tcos$Region_alt)){
+    
+    tmp = tcos[which(tcos$Region_alt == rg),]
+    
+    
+  }
+  dev.off()
   ###############################################################
   ###############################################################
   ###############################################################
@@ -173,7 +215,8 @@ for(ss in speciestemp){
   ### append results to previous output
   
 }
-
+ }
+}
 
 ### read in the full files
 ### sort and re-name relevant columns to match webcontent exactly
