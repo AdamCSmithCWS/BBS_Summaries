@@ -19,9 +19,9 @@ c_purp = brewer.pal(9,"Set1")[4]
 c_green = brewer.pal(9,"Set1")[3]
 
 
-speciestemp = c("Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee")
+speciestemp = c("Horned Lark","Killdeer","Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee")
 
-rollTrend = "Trend"
+rollTrend = "Slope_Trend"
 
 # qs = c(0.025,0.05,0.95,0.975)
 YYYY = 2018
@@ -29,8 +29,9 @@ short_time = 10 #length of time for short-term trend
 
 
 for(ss in speciestemp){
- for(noise in c("heavy_tailed","normal_tailed")){ 
-  rm(list = c("jags_mod_full.RData","jags_data.RData"))
+  if(ss %in% speciestemp[1:2]){noise = "normal_tailed"}else{noise = "heavy_tailed"}
+ #for(noise in "normal_tailed"){#c("heavy_tailed","normal_tailed")){ 
+  rm(list = c("jags_mod","jags_data"))
   
   load(paste0("model_results/",noise,"/",ss,"/jags_mod_full.RData"))
   load(paste0("model_results/",noise,"/",ss,"/jags_data.RData"))
@@ -59,6 +60,20 @@ for(ss in speciestemp){
   #                                  regions = c("prov_state"),
   #                                  startyear = fy,
   #                                  max_backcast = 5)
+  if(fy == 1970){
+    indst = inds$data_summary
+    indst$Trend_Time = "Long-term"
+    indsout = indst
+    rm("indst")
+  }else{
+    indst = inds$data_summary
+    indst$Trend_Time = "Short-term"
+    indsout = rbind(indsout,indst)
+    rm("indst")
+    write.csv(indsout,paste0("output/trends_indices/",plot_header," annual indices.csv"),row.names = F)
+  }
+  
+  
   
   trs = generate_regional_trends(indices = inds,
                                  Min_year = fy,
@@ -67,6 +82,18 @@ for(ss in speciestemp){
                                  prob_decrease = c(0,25,30,50),
                                  prob_increase = c(0,33,100))
   
+  if(fy == 1970){
+    trst = trs
+    trst$Trend_Time = "Long-term"
+    trstout = trst
+    rm("trst")
+  }else{
+    trst = trs
+    trst$Trend_Time = "Short-term"
+    trstout = rbind(trstout,trst)
+    rm("trst")
+    write.csv(trstout,paste0("output/trends_indices/",plot_header," trends.csv"),row.names = F)
+  }
   
   ###############################################################
   ###############################################################
@@ -85,7 +112,19 @@ for(ss in speciestemp){
   print(gf)
   dev.off()
   
-  
+  pdf(paste0("output/geofacets_prov/",plot_header,"_geofacet_strata.pdf"),
+      width = 11,
+      height = 8.5)
+  gf = geofacet_plot(indices_list = inds,
+                     select = T,
+                     stratify_by = "bbs_cws",
+                     multiple = F,
+                     trends = trs,
+                     slope = T,
+                     species = ss)
+  print(gf)
+  dev.off()
+ 
   ###############################################################
   ###############################################################
   ###############################################################
@@ -116,12 +155,24 @@ for(ss in speciestemp){
     
     treg = names(ipp)[i]
     treg = gsub(treg,pattern = "_", replacement = "-")
-    ttind = indsdf[which(indsdf$Region == treg),]
+    ttind = indsdf[which(indsdf$Region_alt == treg),]
+    
+    if(nrow(ttind) == 0){
+      treg = gsub(treg,pattern = "-", replacement = " ")
+      ttind = indsdf[which(indsdf$Region_alt == treg),]
+    }
+    
+    if(nrow(ttind) == 0){
+      treg = gsub(treg,pattern = " ", replacement = "_")
+      ttind = indsdf[which(indsdf$Region_alt == treg),]
+    }
+    
+    
     ttp = ipp[[i]]
     ## add mean counts, number of routes, trend, nnzero
     # transform count variables to mirror existing axis
     
-    trtmp = trs[which(trs$Region == treg),]
+    trtmp = trs[which(trs$Region_alt == treg),]
     trlab = paste(trtmp$Region_alt,round(signif(trtmp$Slope_Trend,2),1),"%/yr")
     
     ulim = max(ttind$Index_q_0.975)
@@ -174,10 +225,10 @@ for(ss in speciestemp){
   indscos = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
-                                   regions = c("continental","national"),
+                                   regions = c("continental","national","prov_state"),
                                    startyear = fy2,
                                    max_backcast = 5,
-                                   alternate_n = "n3")
+                                   alternate_n = "n")
 
   
   for(ly2 in c((fy2+short_time):YYYY)){
@@ -271,8 +322,8 @@ for(ss in speciestemp){
   
   ### append results to previous output
   
-}
- }
+}#short and long-term
+ #} #noise
 }
 
 ### read in the full files
