@@ -211,7 +211,8 @@ for(ss in speciestemp){
     
     
      trlab = paste("Slope_Trend",round(signif(trtmp$Slope_Trend,2),1),"%/yr","since",trtmp$Start_year,st_exc)
-    
+     trlab2 = paste("GAM_Trend",round(signif(trtmp$Trend,2),1),"%/yr","since",trtmp$Start_year,st_exc)
+     
     ulim = max(ttind$Index_q_0.975)
     ttind$prts.sc = (ttind$nrts/mean(ttind$nrts_total))*(ulim*0.5)
     ttmax = ttind[which(ttind$Year == YYYY),]
@@ -221,13 +222,16 @@ for(ss in speciestemp){
     ttmin$lbl = "Observed means"
     
     np <- ttp + 
-      geom_linerange(data = ttind2,aes(x = Year, y = Index,ymin = Index_q_0.025,ymax = Index_q_0.975),colour = c_orng,alpha = 0.2)+
+      geom_ribbon(data = ttind2,aes(x = Year, ymin = Index_q_0.025,ymax = Index_q_0.975),fill = c_orng,alpha = 0.1)+
+      geom_line(data = ttind2,aes(x = Year, y = Index),colour = c_orng,alpha = 0.4)+
       geom_point(data = ttind,aes(x = Year, y = obs_mean),colour = c_blue,alpha = 0.3)+
       geom_col(data = ttind,aes(x = Year, y = prts.sc),width = 0.5,fill = c_green,alpha = 0.1)+
       geom_text_repel(data = ttmax,aes(x = Year, y = prts.sc,label = lbl),nudge_y = 0.1*ulim,colour = c_green,alpha = 0.5,size = 3)+
     geom_text_repel(data = ttmin,aes(x = Year, y = obs_mean,label = lbl),nudge_y = 0.1*ulim,colour = c_blue,alpha = 0.5,size = 3)+
-    annotate("text",x = mean(c(fy,YYYY)),y = ulim*0.9,label = trlab)
-  print(np)
+    annotate("text",x = mean(c(fy,YYYY)),y = ulim*0.9,label = trlab)+
+    annotate("text",x = mean(c(fy,YYYY)),y = ulim*0.8,label = trlab2, colour = c_orng)
+    
+    print(np)
     
   }
   dev.off()
