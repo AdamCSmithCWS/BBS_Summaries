@@ -7,7 +7,7 @@ library(pacman)
 p_load(char = c("bbsBayes","ggplot2","ggrepel","RColorBrewer"),character.only = T)
 
 
-# dat_strat = stratify(by = "bbs_cws")
+ dat_strat = stratify(by = "bbs_cws")
 # 
 # 
 # species_to_run = unique(dat_strat$species_strat$english)
@@ -19,9 +19,9 @@ c_purp = brewer.pal(9,"Set1")[4]
 c_green = brewer.pal(9,"Set1")[3]
 
 
-speciestemp = c("Horned Lark","Killdeer","Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee")
-
-rollTrend = "Slope_Trend"
+speciestemp = c("Blackpoll Warbler","American Kestrel","Pacific Wren","Bewick's Wren","LeConte's Sparrow","Horned Lark","Killdeer","Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee")
+#speciestemp = c("Horned Lark","Killdeer","Pacific Wren","Bewick's Wren","LeConte's Sparrow")
+rollTrend = "Trend"
 
 # qs = c(0.025,0.05,0.95,0.975)
 YYYY = 2018
@@ -29,8 +29,9 @@ short_time = 10 #length of time for short-term trend
 
 
 for(ss in speciestemp){
-  if(ss %in% speciestemp[1:2]){noise = "normal_tailed"}else{noise = "heavy_tailed"}
+  #if(ss %in% speciestemp[1:2]){noise = "normal_tailed"}else{noise = "heavy_tailed"}
  #for(noise in "normal_tailed"){#c("heavy_tailed","normal_tailed")){ 
+  noise = "heavy_tailed"
   rm(list = c("jags_mod","jags_data"))
   
   load(paste0("model_results/",noise,"/",ss,"/jags_mod_full.RData"))
@@ -46,36 +47,57 @@ for(ss in speciestemp){
   
   
   for(fy in c(1970,YYYY-short_time)){
-    plot_header = paste(ss,noise,fy,sep = "_")
+    if(fy == 1970){trend_time = "Long-term"}else{trend_time = "Short-term"}
+    plot_header = paste(ss,noise,trend_time,sep = "_")
     
   inds = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
                                    regions = c("continental","national", "prov_state","bcr","stratum"),
-                                   startyear = fy,
+                                   startyear = min(1995,fy),
                                    max_backcast = 5)
-  # inds2 = generate_regional_indices(jags_mod = jags_mod,
-  #                                  jags_data = jags_data,
-  #                                  quantiles = qs,
-  #                                  regions = c("prov_state"),
-  #                                  startyear = fy,
-  #                                  max_backcast = 5)
+ 
+  
+  inds2 = generate_regional_indices(jags_mod = jags_mod,
+                                   jags_data = jags_data,
+                                   #quantiles = qs,
+                                   regions = c("continental","national", "prov_state","bcr","stratum"),
+                                   startyear = min(1995,fy),
+                                   max_backcast = 5,
+                                   alternate_n = "n3")
+  
+
   if(fy == 1970){
     indst = inds$data_summary
     indst$Trend_Time = "Long-term"
     indsout = indst
     rm("indst")
+    
+    indst2 = inds2$data_summary
+    indst2$Trend_Time = "Long-term"
+    indsout2 = indst2
+    rm("indst2")
+    
   }else{
     indst = inds$data_summary
     indst$Trend_Time = "Short-term"
     indsout = rbind(indsout,indst)
     rm("indst")
-    write.csv(indsout,paste0("output/trends_indices/",plot_header," annual indices.csv"),row.names = F)
+    
+    indst2 = inds2$data_summary
+    indst2$Trend_Time = "Short-term"
+    indsout2 = rbind(indsout2,indst2)
+    rm("indst2")
+    
+    write.csv(indsout,paste0("output/trends_indices/",paste(ss,noise,sep = "_")," annual indices.csv"),row.names = F)
+  
+    
+    write.csv(indsout,paste0("output/trends_indices_smooth/",paste(ss,noise,sep = "_"),"smooth annual indices.csv"),row.names = F)
   }
   
   
   
-  trs = generate_regional_trends(indices = inds,
+  trs = generate_regional_trends(indices = inds2,
                                  Min_year = fy,
                                  #quantiles = qs,
                                  slope = T,
@@ -92,7 +114,7 @@ for(ss in speciestemp){
     trst$Trend_Time = "Short-term"
     trstout = rbind(trstout,trst)
     rm("trst")
-    write.csv(trstout,paste0("output/trends_indices/",plot_header," trends.csv"),row.names = F)
+    write.csv(trstout,paste0("output/trends_indices/",paste(ss,noise,sep = "_")," trends.csv"),row.names = F)
   }
   
   ###############################################################
@@ -107,7 +129,7 @@ for(ss in speciestemp){
                      stratify_by = "bbs_cws",
                      multiple = T,
                      trends = trs,
-                     slope = T,
+                     slope = F,
                      species = ss)
   print(gf)
   dev.off()
@@ -120,7 +142,7 @@ for(ss in speciestemp){
                      stratify_by = "bbs_cws",
                      multiple = F,
                      trends = trs,
-                     slope = T,
+                     slope = F,
                      species = ss)
   print(gf)
   dev.off()
@@ -131,7 +153,7 @@ for(ss in speciestemp){
   ### index plots, all single pdf for a species and time-series
   
   ipp = plot_strata_indices(indices_list = inds,
-                            min_year = fy,
+                            min_year = min(1995,fy),
                             add_observed_means = F,
                             species = ss)
   
@@ -151,20 +173,25 @@ for(ss in speciestemp){
       height = 6)
   
   indsdf = inds$data_summary
+  indsdf2 = inds2$data_summary
+  
   for(i in 1:length(ipp)){
     
     treg = names(ipp)[i]
     treg = gsub(treg,pattern = "_", replacement = "-")
     ttind = indsdf[which(indsdf$Region_alt == treg),]
+    ttind2 = indsdf2[which(indsdf2$Region_alt == treg),]
     
     if(nrow(ttind) == 0){
       treg = gsub(treg,pattern = "-", replacement = " ")
       ttind = indsdf[which(indsdf$Region_alt == treg),]
+      ttind2 = indsdf2[which(indsdf2$Region_alt == treg),]
     }
     
     if(nrow(ttind) == 0){
       treg = gsub(treg,pattern = " ", replacement = "_")
       ttind = indsdf[which(indsdf$Region_alt == treg),]
+      ttind2 = indsdf2[which(indsdf2$Region_alt == treg),]
     }
     
     
@@ -173,7 +200,17 @@ for(ss in speciestemp){
     # transform count variables to mirror existing axis
     
     trtmp = trs[which(trs$Region_alt == treg),]
-    trlab = paste(trtmp$Region_alt,round(signif(trtmp$Slope_Trend,2),1),"%/yr")
+    st_exc = unique(trtmp$Strata_excluded)
+    if(st_exc != ""){
+      if(nchar(st_exc) > 20){
+        stx2 = unlist(strsplit(st_exc,split = " ; "))
+        st_exc <- paste("Excluding",length(stx2),"strata")
+      }else{
+        st_exc <- paste("Excluding",st_exc)
+      }}
+    
+    
+     trlab = paste("Slope_Trend",round(signif(trtmp$Slope_Trend,2),1),"%/yr","since",trtmp$Start_year,st_exc)
     
     ulim = max(ttind$Index_q_0.975)
     ttind$prts.sc = (ttind$nrts/mean(ttind$nrts_total))*(ulim*0.5)
@@ -184,6 +221,7 @@ for(ss in speciestemp){
     ttmin$lbl = "Observed means"
     
     np <- ttp + 
+      geom_linerange(data = ttind2,aes(x = Year, y = Index,ymin = Index_q_0.025,ymax = Index_q_0.975),colour = c_orng,alpha = 0.2)+
       geom_point(data = ttind,aes(x = Year, y = obs_mean),colour = c_blue,alpha = 0.3)+
       geom_col(data = ttind,aes(x = Year, y = prts.sc),width = 0.5,fill = c_green,alpha = 0.1)+
       geom_text_repel(data = ttmax,aes(x = Year, y = prts.sc,label = lbl),nudge_y = 0.1*ulim,colour = c_green,alpha = 0.5,size = 3)+
@@ -202,7 +240,7 @@ for(ss in speciestemp){
   pdf(paste0("output/Trend_maps/",plot_header,"_trend_map.pdf"),
       width = 8.5,
       height = 6)
-  pp = generate_map(trend = trs,select = T,stratify_by = strat,slope = T)
+  pp = generate_map(trend = trs,select = T,stratify_by = strat,slope = F)
   print(pp)
   dev.off()
   
@@ -228,7 +266,7 @@ for(ss in speciestemp){
                                    regions = c("continental","national","prov_state"),
                                    startyear = fy2,
                                    max_backcast = 5,
-                                   alternate_n = "n")
+                                   alternate_n = "n3")
 
   
   for(ly2 in c((fy2+short_time):YYYY)){
@@ -267,6 +305,17 @@ for(ss in speciestemp){
   for(rg in unique(tcos$Region_alt)){
     
     tmp = tcos[which(tcos$Region_alt == rg),]
+    
+    st_exc = unique(tmp$Strata_excluded)
+    if(st_exc != ""){
+      if(nchar(st_exc) > 20){
+        stx2 = unlist(strsplit(st_exc,split = " ; "))
+        st_exc <- paste("Excluding",length(stx2),"strata")
+      }else{
+      st_exc <- paste("Excluding",st_exc)
+    }}
+    
+    
     tmpend4 = tmp[nrow(tmp)-4,]
     tmpend4$lab50 = "50% CI"
     tmpend4$lab95 = "95% CI"
@@ -280,7 +329,7 @@ for(ss in speciestemp){
       
     cpt = ggplot(data = tmp,aes(x = End_year,y = rolt))+
       theme_minimal()+
-      labs(title = paste(ss,"rolling",short_time,"year trends",rg),
+      labs(title = paste(ss,"rolling",short_time,"year trends",rg,st_exc),
            subtitle = paste("Based on",rollTrend,"in",YYYY,":",pth_30_labs,"and",pth_50_labs))+
            xlab(paste("Ending year of",short_time,"trend"))+
            ylab(paste(short_time,"year trends"))+
@@ -297,8 +346,6 @@ for(ss in speciestemp){
       
       
 
-    ## add final probability of decrease at thresholds
-    ## add species name and trend_type
     ## update the theme?
   print(cpt)
     
@@ -318,6 +365,11 @@ for(ss in speciestemp){
   ## add the forweb column
   
   
+  
+  ###############################################################
+  ###############################################################
+  ###############################################################
+  ## add the reliability categories
   
   
   ### append results to previous output
