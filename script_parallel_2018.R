@@ -1,58 +1,41 @@
 ###################################################
-# Adam C. Smith & Brandon P.M. Edwards
-# GAM Paper Script
-# gam-kfold-bbsBayes.R
-# Created July 2019
-# Last Updated July 2019
-###################################################
+#Full 2018 BBS run
 
-###################################################
-# Initial Setup + Setting Constants
-###################################################
-setwd("C:/BBS19/Cosewic2019")
+
+
+
 
 remove(list = ls())
-# These are just the defaults for bbsBayes run_model. Modify as needed
 n_saved_steps = 2000
 n_thin = 20
 n_burnin = 10000
 n_chains = 3
-n_adapt = 1000
+n_adapt = NULL
 
 dir.create("output", showWarnings = F)
 
-# Install v1.1.2 from Github (comment these three lines out if already installed:
+# Install Adam's version from Github (comment these three lines out if already installed:
 # install.packages("devtools")
 # library(devtools)
-# devtools::install_github("BrandonEdwards/bbsBayes")#, ref = "v1.1.2")
+# devtools::install_github("AdamCSmithCWS/bbsBayes")
+
 
 library(bbsBayes)
 library(foreach)
 library(doParallel)
 library(dplyr)
-library(tidyr)
+library(tidyverse)
 
-# Only need to run this if you don't have BBS data saved
-# in directory on your computer
-# yes immediately following to agree to terms and conditions
-# fetch_bbs_data()
-# yes
+#fetch_bbs_data()
 
 stratified_data <- stratify(by = "bbs_cws")
 
-species_to_run <- c("Pacific Wren",
-                    "Bewick's Wren",
-                    "LeConte's Sparrow",
-                    "Blackpoll Warbler",
-                    "Bobolink",
-                    "Canada Warbler",
-                    "Western Wood-Pewee",
-                    "McCown's Longspur",
-                    "Horned Lark",
-                    "Killdeer",
-                    "Barn Swallow",
-                    "Bank Swallow")
+allspecies.eng = stratified_data$species_strat$english
+allspecies.fre = stratified_data$species_strat$french
+allspecies.num = stratified_data$species_strat$sp.bbs
 
+allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",replacement = ""),
+                             "\\s",replacement = "_")
 
 ###################################################
 # Analysis by Species X Model Combination
@@ -60,31 +43,38 @@ species_to_run <- c("Pacific Wren",
 
 
 # Set up parallel stuff
-n_cores <- 7
+n_cores <- 20
 cluster <- makeCluster(n_cores, type = "PSOCK")
 registerDoParallel(cluster)
 
 
 model = "gamye"
-nspecies = length(species_to_run)
+nspecies = length(allspecies.eng)
 
+nrecs_sp = (table(stratified_data$bird_strat$AOU))
 
-foreach(i = 1:nspecies,
+sp.order = sample(size = nspecies,x = c(1:nspecies),replace = F)
+
+foreach(i = sp.order,
         .packages = 'bbsBayes',
         .inorder = FALSE,
         .errorhandling = "pass") %dopar%
   {
     
-    species = species_to_run[i]
+    species = allspecies.file[i]
+    species.eng = allspecies.eng[i]
+    species.num = allspecies.num[i]
     
   sp.dir = paste0("output/", species)
   dir.create(sp.dir)
   
+  nrecs = nrecs_sp[paste(species.num)]
   
+  if(nrecs > 100){
   #### identifying the K folds for cross-validation
     ## selecting stratified samples that remove 10% of data within each stratum
   jags_data <- prepare_jags_data(strat_data = stratified_data,
-                                 species_to_run = species,
+                                 species_to_run = species.eng,
                                  min_max_route_years = 5,
                                  model = model,
                                  heavy_tailed = T)
@@ -93,22 +83,21 @@ foreach(i = 1:nspecies,
 
 
   
-#inits = function()
-    #model_file <- paste0("C:/Users/RA/Documents/R/win-library/3.6/bbsBayes/models/gam-ye.t.jags")
-    # 
+
     jags_mod <- run_model(jags_data = jags_data,
-                              # model_file_path = model_file,
                                n_saved_steps = n_saved_steps,
-                               #n_adapt = n_adapt,
                                n_burnin = n_burnin,
                                n_chains = n_chains,
                                n_thin = n_thin,
-                               parallel = F,
-                          parameters_to_save = c("n","n3","nu","sdnoise","B.X","beta.X"),
+                               parallel = T,
+                          parameters_to_save = c("n","n3","nu","B.X","beta.X","strata","sdbeta","sdX"),
                           modules = NULL)
      save(jags_mod, file = paste0(sp.dir, "/jags_mod_full.RData"))
      save(jags_data, file = paste0(sp.dir, "/jags_data.RData"))
      
+
+  }#end if nrecs > 100
+  
     }#end of full model parallel loop
     
 stopCluster(cl = cluster)
