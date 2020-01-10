@@ -125,11 +125,3 @@ fullrun <- foreach(i = sp.rerun[1:20],
     }#end of full model parallel loop
     
 stopCluster(cl = cluster)
-
-
-
-
-
-
-
-
