@@ -4,7 +4,7 @@
 library(pacman)
 
 
-p_load(char = c("bbsBayes","ggplot2","ggrepel","RColorBrewer"),character.only = T)
+p_load(char = c("bbsBayes","ggplot2","ggrepel","RColorBrewer","tidyverse"),character.only = T)
 
 
  dat_strat = stratify(by = "bbs_cws")
@@ -19,23 +19,43 @@ c_purp = brewer.pal(9,"Set1")[4]
 c_green = brewer.pal(9,"Set1")[3]
 
 
-speciestemp = c("Blackpoll Warbler","American Kestrel","Pacific Wren","Bewick's Wren","LeConte's Sparrow","Horned Lark","Killdeer","Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee")
-#speciestemp = c("Horned Lark","Killdeer","Pacific Wren","Bewick's Wren","LeConte's Sparrow")
+speciestemp = c("Blackpoll Warbler","American Kestrel","Pacific Wren",
+                "Bewick's Wren","LeConte's Sparrow","Horned Lark","Killdeer",
+                "Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee",
+                "Barn Swallow","Bank Swallow")
+
+speciestemp2 = c("LeConte's Sparrow","Horned Lark",
+                "Barn Swallow","Bank Swallow")
+
+allspecies.eng = dat_strat$species_strat$english
+allspecies.fre = dat_strat$species_strat$french
+allspecies.num = dat_strat$species_strat$sp.bbs
+
+allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",replacement = ""),
+                                  "\\s",replacement = "_")
+
+
 rollTrend = "Trend"
 
 # qs = c(0.025,0.05,0.95,0.975)
-YYYY = 2018
+YYYY = 2018 ## BBS data version year
 short_time = 10 #length of time for short-term trend
 
 
-for(ss in speciestemp){
+for(ssi in which(allspecies.eng %in% speciestemp2)){
   #if(ss %in% speciestemp[1:2]){noise = "normal_tailed"}else{noise = "heavy_tailed"}
  #for(noise in "normal_tailed"){#c("heavy_tailed","normal_tailed")){ 
+  
+  ss = allspecies.eng[ssi]
+  ss.f = allspecies.fre[ssi]
+  ss.n = allspecies.num[ssi]
+  ss.file = allspecies.file[ssi]
+  
   noise = "heavy_tailed"
   rm(list = c("jags_mod","jags_data"))
-  
-  load(paste0("model_results/",noise,"/",ss,"/jags_mod_full.RData"))
-  load(paste0("model_results/",noise,"/",ss,"/jags_data.RData"))
+  if(file.exists(paste0("model_results/",noise,"/",ss.file,"/jags_mod_full.RData"))){
+  load(paste0("model_results/",noise,"/",ss.file,"/jags_mod_full.RData"))
+  load(paste0("model_results/",noise,"/",ss.file,"/jags_data.RData"))
   
   strat = jags_mod$stratify_by
   
@@ -89,10 +109,10 @@ for(ss in speciestemp){
     indsout2 = rbind(indsout2,indst2)
     rm("indst2")
     
-    write.csv(indsout,paste0("output/trends_indices/",paste(ss,noise,sep = "_")," annual indices.csv"),row.names = F)
+    write.csv(indsout,paste0("output/trends_indices/",paste(ss.file,noise,sep = "_")," annual indices.csv"),row.names = F)
   
     
-    write.csv(indsout,paste0("output/trends_indices_smooth/",paste(ss,noise,sep = "_"),"smooth annual indices.csv"),row.names = F)
+    write.csv(indsout2,paste0("output/alternate_trends_indices/",paste(ss.file,noise,sep = "_"),"smooth annual indices.csv"),row.names = F)
   }
   
   
@@ -104,17 +124,37 @@ for(ss in speciestemp){
                                  prob_decrease = c(0,25,30,50),
                                  prob_increase = c(0,33,100))
   
+  trs2 = generate_regional_trends(indices = inds,
+                                 Min_year = fy,
+                                 #quantiles = qs,
+                                 slope = T,
+                                 prob_decrease = c(0,25,30,50),
+                                 prob_increase = c(0,33,100))
+  
+  
   if(fy == 1970){
     trst = trs
     trst$Trend_Time = "Long-term"
     trstout = trst
     rm("trst")
+    
+    trst2 = trs2
+    trst2$Trend_Time = "Long-term"
+    trstout2 = trst2
+    rm("trst2")
+    
   }else{
     trst = trs
     trst$Trend_Time = "Short-term"
     trstout = rbind(trstout,trst)
     rm("trst")
-    write.csv(trstout,paste0("output/trends_indices/",paste(ss,noise,sep = "_")," trends.csv"),row.names = F)
+    write.csv(trstout,paste0("output/trends_indices/",paste(ss.file,noise,sep = "_")," trends.csv"),row.names = F)
+ 
+    trst2 = trs2
+    trst2$Trend_Time = "Short-term"
+    trstout2 = rbind(trstout2,trst2)
+    rm("trst2")
+    write.csv(trstout2,paste0("output/alternate_trends_indices/",paste(ss.file,noise,sep = "_")," trends incl yeareffects.csv"),row.names = F)
   }
   
   ###############################################################
@@ -200,6 +240,9 @@ for(ss in speciestemp){
     # transform count variables to mirror existing axis
     
     trtmp = trs[which(trs$Region_alt == treg),]
+    
+    trtmp2 = trs2[which(trs2$Region_alt == treg),]
+    
     st_exc = unique(trtmp$Strata_excluded)
     if(st_exc != ""){
       if(nchar(st_exc) > 20){
@@ -210,8 +253,10 @@ for(ss in speciestemp){
       }}
     
     
-     trlab = paste("Slope_Trend",round(signif(trtmp$Slope_Trend,2),1),"%/yr","since",trtmp$Start_year,st_exc)
-     trlab2 = paste("GAM_Trend",round(signif(trtmp$Trend,2),1),"%/yr","since",trtmp$Start_year,st_exc)
+     trlab = paste("Slope_Trend",round(signif(trtmp2$Slope_Trend,2),1),"%/yr","since",trtmp2$Start_year,st_exc,
+                   round(signif(trtmp2$Slope_Trend_Q0.025,2),1),":",round(signif(trtmp2$Slope_Trend_Q0.975,2),1))
+     trlab2 = paste("GAM_Trend",round(signif(trtmp$Trend,2),1),"%/yr","since",trtmp$Start_year,st_exc,
+                    round(signif(trtmp$Trend_Q0.025,2),1),":",round(signif(trtmp$Trend_Q0.975,2),1))
      
     ulim = max(ttind$Index_q_0.975)
     ttind$prts.sc = (ttind$nrts/mean(ttind$nrts_total))*(ulim*0.5)
@@ -267,7 +312,7 @@ for(ss in speciestemp){
   indscos = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
-                                   regions = c("continental","national","prov_state"),
+                                   regions = c("continental","national","prov_state","bcr","stratum"),
                                    startyear = fy2,
                                    max_backcast = 5,
                                    alternate_n = "n3")
@@ -281,7 +326,7 @@ for(ss in speciestemp){
                                  slope = T,
                                  prob_decrease = c(0,25,30,50),
                                  prob_increase = c(0,33,100))
-  if(ly2 == fy2+10){
+  if(ly2 == fy2+short_time){
     tcos = trst
   }else{
     tcos = rbind(tcos,trst)
@@ -380,7 +425,10 @@ for(ss in speciestemp){
   
 }#short and long-term
  #} #noise
-}
+  
+  }#if output exists
+  
+}#species loop
 
 ### read in the full files
 ### sort and re-name relevant columns to match webcontent exactly
