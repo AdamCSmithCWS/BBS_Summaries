@@ -16,7 +16,7 @@ generate_web_maps <- function(df,
                    stex = stx,
                    map = canmap)
       png(filename = paste0("WebMaps/",mapname),
-          bg = "white",width = 480, height = 420)
+          bg = "white",width = 480, height = 320)
       print(mapo)
       dev.off()
       
@@ -70,7 +70,9 @@ map_f <- function(st, #dataframe of trends
   
   return(
     sp::spplot(map, col.regions = map_palette,
-               sp.layout = list(basmap, fill="transparent", first=FALSE),
+               edge.col = grey(0.5),
+               sp.layout = list(basmap, edge.col = grey(0.5),
+                                fill="transparent", first=FALSE),
                par.settings = list(axis.line = list(col = 'transparent')))
   )
 }

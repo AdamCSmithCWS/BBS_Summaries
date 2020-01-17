@@ -36,7 +36,12 @@ allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",rep
                                   "\\s",replacement = "_")
 
 
+COSEWIC = T
+if(COSEWIC){
 rollTrend = "Trend"
+}
+
+
 
 # qs = c(0.025,0.05,0.95,0.975)
 YYYY = 2018 ## BBS data version year
@@ -69,6 +74,9 @@ names(cov_cuts) <- c("High","Medium")
 
 # load the maps for CWS webmaps ---------------------------------------
 
+WEBMAP = T
+
+if(WEBMAP){
 canmap <- rgdal::readOGR(dsn = system.file("maps",
                                                  package = "bbsBayes"),
                       layer = "BBS_CWS_strata",
@@ -86,16 +94,14 @@ basmap = rgdal::readOGR(dsn = system.file("maps",
 basmap@data$country <- substr(basmap@data$ST_12,1,2)
 
 basmap <- basmap[basmap$country == "CA",]
-
+}
 
 # Species loop ------------------------------------------------------------
 
 
 
 for(ssi in which(allspecies.eng %in% speciestemp2)){
-  #if(ss %in% speciestemp[1:2]){noise = "normal_tailed"}else{noise = "heavy_tailed"}
- #for(noise in "normal_tailed"){#c("heavy_tailed","normal_tailed")){ 
-  
+ 
   ss = allspecies.eng[ssi]
   ss.f = allspecies.fre[ssi]
   ss.n = allspecies.num[ssi]
@@ -103,15 +109,15 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   
   noise = "heavy_tailed"
   rm(list = c("jags_mod","jags_data"))
+  
   if(file.exists(paste0("model_results/",noise,"/",ss.file,"/jags_mod_full.RData"))){
-  load(paste0("model_results/",noise,"/",ss.file,"/jags_mod_full.RData"))
+  
+    load(paste0("model_results/",noise,"/",ss.file,"/jags_mod_full.RData"))
   load(paste0("model_results/",noise,"/",ss.file,"/jags_data.RData"))
   
   strat = jags_mod$stratify_by
   
   
-
-# Loop for short and long-term trends and indices -------------------------
 
 ###
   #testing alternate regions
@@ -137,6 +143,11 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   #                                slope = T,
   #                                prob_decrease = c(0,25,30,50),
   #                                prob_increase = c(0,33,100))
+  
+  
+  
+  
+  # Loop for short and long-term trends and indices -------------------------
   
   for(fy in c(1970,YYYY-short_time)){
     if(fy == 1970){trend_time = "Long-term"}else{trend_time = "Short-term"}
@@ -252,9 +263,9 @@ trst2$For_Web <- for_web_func(trst2)
 trst$For_Web <- for_web_func(trst)
 
 # Generate the web-maps --------------------------------------------------------
-
+if(WEBMAP){
 trst = generate_web_maps(trst)
-
+}
 
 ###############################################################
 ###############################################################
@@ -427,7 +438,7 @@ if(fy == 1970){
 
 
 # COSEWIC output ----------------------------------------------------------
-
+if(COSEWIC){
  
   
   fy2 = min(1995,fy)
@@ -523,7 +534,7 @@ if(fy == 1970){
     }
   dev.off()
   
-
+}#end if COSEWIC
 
 
   ### append results to previous output
