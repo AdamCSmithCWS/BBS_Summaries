@@ -42,6 +42,81 @@ YYYY = 2018 ## BBS data version year
 short_time = 10 #length of time for short-term trend
 
 
+lastyear = read.csv("2017estimates/All BBS trends 2017 w reliab.csv",stringsAsFactors = F)
+covs = lastyear[,c("sp","species","geo.area","trendtype","trendtime","startyear","reliab.cov")]
+
+covs <- covs[which((covs$trendtime == "full") |
+                     (covs$trendtype == "short-term" & covs$trendtime == "reduc")),]
+
+# oldregs = data.frame(geo.area = unique(covs$geo.area),
+#                      new.area = NA)
+# newstr = read.csv("C:/Users/smithac/Documents/GitHub/bbsBayes/inst/composite-regions/stratcan.csv",stringsAsFactors = F)
+# chkcl = c("Province_State","Country","region")
+# newnms = unique(c(unlist(newstr[,chkcl])))
+# 
+# for(i in 1:nrow(oldregs)){
+#   tmp = newnms[which(newnms == oldregs[i,"geo.area"])]
+#   if(length(tmp) > 0){
+#     oldregs[i,"new.area"] <- tmp
+#   }else{
+#     tmp2 = as.character(oldregs[i,"geo.area"])
+#       if(grepl(pattern = "-BCR",tmp2,fixed = T)){
+#         s1 = stringr::str_locate(pattern = "-BCR",string = tmp2)[1]-1
+#         s2 = stringr::str_locate(pattern = "-BCR",string = tmp2)[2]+1
+#         
+#         pr = stringr::str_sub(string = tmp2,start = 1,end = s1)
+#         
+#         bcr = stringr::str_sub(string = tmp2,start = s2,end = nchar(tmp2))
+#         
+#         strn = unique(newstr[which(newstr$Province_State == pr & newstr$bcr == bcr),"region"])
+#         if(length(strn) > 0){oldregs[i,"new.area"] <- strn}
+#         rm("strn")
+#       }
+# 
+#     }
+#     }
+# 
+# 
+# write.csv(oldregs,"old region names.csv",row.names = F)
+
+oldregs = read.csv("old region names.csv",stringsAsFactors = F)
+
+covs = merge(covs,oldregs,by = "geo.area")
+
+
+
+# reliability category definitions ----------------------------------------
+
+prec_cuts = c(abs(2*((0.7^(1/20))-1)),
+              abs(2*((0.5^(1/20))-1)))*100 
+names(prec_cuts) <- c("High","Medium")
+
+cov_cuts = c(0.5,0.25)
+names(cov_cuts) <- c("High","Medium")
+
+reliab_func_prec <- function(x){
+  y = rep("Low",length(x))
+  y[which(x <= prec_cuts["Medium"])] <- "Medium"
+  y[which(x < prec_cuts["High"])] <- "High"
+  return(y)
+}
+
+reliab_func_cov <- function(x){
+  y = rep("Low",length(x))
+  y[which(x >= cov_cuts["Medium"])] <- "Medium"
+  y[which(x > cov_cuts["High"])] <- "High"
+  return(y)
+}
+
+
+
+
+
+
+# Species loop ------------------------------------------------------------
+
+
+
 for(ssi in which(allspecies.eng %in% speciestemp2)){
   #if(ss %in% speciestemp[1:2]){noise = "normal_tailed"}else{noise = "heavy_tailed"}
  #for(noise in "normal_tailed"){#c("heavy_tailed","normal_tailed")){ 
@@ -60,11 +135,33 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   strat = jags_mod$stratify_by
   
   
-  ###############################################################
-  ###############################################################
-  ###############################################################
-  #### loop for short-term and long-term indices and trends
-  
+
+# Loop for short and long-term trends and indices -------------------------
+
+###
+  #testing alternate regions
+  # tmp = get_composite_regions(strata_type = jags_mod$stratify_by)
+  # tmp$boreal = "Eastern"
+  # tmp[which(tmp$Province_State %in% c("British Columbia",
+  #                                     "Alberta",
+  #                                     "Northwest Territories",
+  #                                     "Saskatchewan",
+  #                                     "Yukon",
+  #                                     "Alaska")),"boreal"] = "Western"
+  # indstmp = generate_regional_indices(jags_mod = jags_mod,
+  #                           jags_data = jags_data,
+  #                           #quantiles = qs,
+  #                           alt_region_names = tmp,
+  #                           regions = c("boreal","continental","national","stratum", "prov_state","bcr","bcr_by_country"),
+  #                           startyear = min(1995,fy),
+  #                           max_backcast = 5)
+  # 
+  # trs = generate_regional_trends(indices = indstmp,
+  #                                Min_year = fy,
+  #                                #quantiles = qs,
+  #                                slope = T,
+  #                                prob_decrease = c(0,25,30,50),
+  #                                prob_increase = c(0,33,100))
   
   for(fy in c(1970,YYYY-short_time)){
     if(fy == 1970){trend_time = "Long-term"}else{trend_time = "Short-term"}
@@ -73,7 +170,7 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   inds = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
-                                   regions = c("continental","national", "prov_state","bcr","stratum"),
+                                   regions = c("continental","national", "prov_state","bcr","stratum","bcr_by_country"),
                                    startyear = min(1995,fy),
                                    max_backcast = 5)
  
@@ -81,31 +178,34 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   inds2 = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
-                                   regions = c("continental","national", "prov_state","bcr","stratum"),
+                                   regions = c("continental","national", "prov_state","bcr","stratum","bcr_by_country"),
                                    startyear = min(1995,fy),
                                    max_backcast = 5,
                                    alternate_n = "n3")
   
+  indst = inds$data_summary
+  indst$Trend_Time = trend_time
+  
 
+  
+  indst2 = inds2$data_summary
+  indst2$Trend_Time = trend_time
+  
   if(fy == 1970){
-    indst = inds$data_summary
-    indst$Trend_Time = "Long-term"
+
     indsout = indst
     rm("indst")
     
-    indst2 = inds2$data_summary
-    indst2$Trend_Time = "Long-term"
+
     indsout2 = indst2
     rm("indst2")
     
   }else{
-    indst = inds$data_summary
-    indst$Trend_Time = "Short-term"
+ 
     indsout = rbind(indsout,indst)
     rm("indst")
     
-    indst2 = inds2$data_summary
-    indst2$Trend_Time = "Short-term"
+
     indsout2 = rbind(indsout2,indst2)
     rm("indst2")
     
@@ -132,35 +232,111 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
                                  prob_increase = c(0,33,100))
   
   
-  if(fy == 1970){
-    trst = trs
-    trst$Trend_Time = "Long-term"
-    trstout = trst
-    rm("trst")
-    
-    trst2 = trs2
-    trst2$Trend_Time = "Long-term"
-    trstout2 = trst2
-    rm("trst2")
-    
-  }else{
-    trst = trs
-    trst$Trend_Time = "Short-term"
-    trstout = rbind(trstout,trst)
-    rm("trst")
-    write.csv(trstout,paste0("output/trends_indices/",paste(ss.file,noise,sep = "_")," trends.csv"),row.names = F)
- 
-    trst2 = trs2
-    trst2$Trend_Time = "Short-term"
-    trstout2 = rbind(trstout2,trst2)
-    rm("trst2")
-    write.csv(trstout2,paste0("output/alternate_trends_indices/",paste(ss.file,noise,sep = "_")," trends incl yeareffects.csv"),row.names = F)
-  }
   
-  ###############################################################
-  ###############################################################
-  ###############################################################
-  ### geofacet plots
+  trst = trs
+  trst$Trend_Time = trend_time
+  trst$reliab.prec = trst$Trend_Q0.975-trst$Trend_Q0.025
+  
+  trst2 = trs2
+  trst2$Trend_Time = trend_time
+  trst2$reliab.prec = trst2$Trend_Q0.975-trst2$Trend_Q0.025
+  
+  
+
+# insert last year's coverage estimates -----------------------------------
+
+  covsp = covs[which(covs$sp == ss.n & covs$trendtype == tolower(trend_time)),]
+trst = merge(trst,
+             covsp[,c("new.area","reliab.cov")],
+             by.x = "Region_alt",
+             by.y = "new.area",
+             all.x = T,sort = F)  
+
+trst2 = merge(trst2,
+             covsp[,c("new.area","reliab.cov")],
+             by.x = "Region_alt",
+             by.y = "new.area",
+             all.x = T,sort = F)
+
+
+
+# insert reliability categories---------------------------------------------------
+
+trst$precision = reliab_func_prec(trst$reliab.prec)
+trst$coverage = reliab_func_cov(trst$reliab.cov)
+
+trst2$precision = reliab_func_prec(trst2$reliab.prec)
+trst2$coverage = reliab_func_cov(trst2$reliab.cov)
+
+
+# Identify trends to publish on CWS website -------------------------------
+
+for_web_func <- function(df){
+  y = rep(FALSE,nrow(df))
+  for(j in 1:nrow(df)){
+    if(df[j,"Region_type"] == "continental"){next}
+    sts = unlist(strsplit(df[j,"Strata_included"],split = " ; "))
+    if(any(stringr::str_starts(sts,pattern = "CA-"))){
+    y[j] <- TRUE
+  }
+  }
+  return(y)
+}
+
+
+trst2$For_Web <- for_web_func(trst2)
+trst$For_Web <- for_web_func(trst)
+
+# Generate the web-maps --------------------------------------------------------
+
+generate_web_maps <- function(df){
+  for(j in 1:nrow(df)){
+    if(df[j,"For_Web"]){
+      mapname = paste(ss.n,df[j,"Region_alt"],df[j,"Trend_Time"],"map.png")
+      df[j,"mapfile"] <- mapname
+      
+    }
+  }
+  return(df)
+  
+}
+
+
+
+
+###############################################################
+###############################################################
+###############################################################
+## add the forweb column
+
+
+# Write the species trend files -------------------------------------------
+
+
+
+if(fy == 1970){
+  trstout = trst
+  rm("trst")
+  
+  trstout2 = trst2
+  rm("trst2")
+  
+}else{
+  trstout = rbind(trstout,trst)
+  rm("trst")
+  write.csv(trstout,paste0("output/trends_indices/",paste(ss.file,noise,sep = "_")," trends.csv"),row.names = F)
+  
+  trstout2 = rbind(trstout2,trst2)
+  rm("trst2")
+  write.csv(trstout2,paste0("output/alternate_trends_indices/",paste(ss.file,noise,sep = "_")," trends incl yeareffects.csv"),row.names = F)
+}
+
+
+
+# geofacet plots ----------------------------------------------------------
+
+
+
   pdf(paste0("output/geofacets_strata/",plot_header,"_geofacet_strata.pdf"),
       width = 11,
       height = 8.5)
@@ -187,11 +363,11 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   print(gf)
   dev.off()
  
-  ###############################################################
-  ###############################################################
-  ###############################################################
-  ### index plots, all single pdf for a species and time-series
+
+# index plots, all single pdf for a species and time-series ---------------
+
   
+
   ipp = plot_strata_indices(indices_list = inds,
                             min_year = min(1995,fy),
                             add_observed_means = F,
@@ -281,10 +457,10 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   }
   dev.off()
   
-  ###############################################################
-  ###############################################################
-  ###############################################################
-  ### trend maps
+
+# trend maps --------------------------------------------------------------
+
+
   
   pdf(paste0("output/Trend_maps/",plot_header,"_trend_map.pdf"),
       width = 8.5,
@@ -296,17 +472,11 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   
  
   
-  ###############################################################
-  ###############################################################
-  ###############################################################
-  ### bring in last year's coverage calculation
-  
-  
-  
-  ###############################################################
-  ###############################################################
-  ###############################################################
-  ### COSEWIC output
+
+
+# COSEWIC output ----------------------------------------------------------
+
+ 
   
   fy2 = min(1995,fy)
   indscos = generate_regional_indices(jags_mod = jags_mod,
@@ -400,20 +570,9 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
     
     }
   dev.off()
-  ###############################################################
-  ###############################################################
-  ###############################################################
-  ### grab the list of strata included for each trend,
-  ## generate the relevant map
-  ## add the map title to the trend file
   
-  
-  ###############################################################
-  ###############################################################
-  ###############################################################
-  ## add the forweb column
-  
-  
+
+
   
   ###############################################################
   ###############################################################
