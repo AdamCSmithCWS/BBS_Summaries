@@ -7,11 +7,12 @@ library(pacman)
 p_load(char = c("bbsBayes","ggplot2","ggrepel","RColorBrewer","tidyverse"),character.only = T)
 
 
- dat_strat = stratify(by = "bbs_cws")
-# 
-# 
-# species_to_run = unique(dat_strat$species_strat$english)
+sapply(list.files(pattern="[.]R$", path="functions/", full.names=TRUE), source);
 
+
+ dat_strat = stratify(by = "bbs_cws")
+
+ 
 c_orng = brewer.pal(9,"Set1")[5]
 c_red = brewer.pal(9,"Set1")[1]
 c_blue = brewer.pal(9,"Set1")[2]
@@ -48,37 +49,6 @@ covs = lastyear[,c("sp","species","geo.area","trendtype","trendtime","startyear"
 covs <- covs[which((covs$trendtime == "full") |
                      (covs$trendtype == "short-term" & covs$trendtime == "reduc")),]
 
-# oldregs = data.frame(geo.area = unique(covs$geo.area),
-#                      new.area = NA)
-# newstr = read.csv("C:/Users/smithac/Documents/GitHub/bbsBayes/inst/composite-regions/stratcan.csv",stringsAsFactors = F)
-# chkcl = c("Province_State","Country","region")
-# newnms = unique(c(unlist(newstr[,chkcl])))
-# 
-# for(i in 1:nrow(oldregs)){
-#   tmp = newnms[which(newnms == oldregs[i,"geo.area"])]
-#   if(length(tmp) > 0){
-#     oldregs[i,"new.area"] <- tmp
-#   }else{
-#     tmp2 = as.character(oldregs[i,"geo.area"])
-#       if(grepl(pattern = "-BCR",tmp2,fixed = T)){
-#         s1 = stringr::str_locate(pattern = "-BCR",string = tmp2)[1]-1
-#         s2 = stringr::str_locate(pattern = "-BCR",string = tmp2)[2]+1
-#         
-#         pr = stringr::str_sub(string = tmp2,start = 1,end = s1)
-#         
-#         bcr = stringr::str_sub(string = tmp2,start = s2,end = nchar(tmp2))
-#         
-#         strn = unique(newstr[which(newstr$Province_State == pr & newstr$bcr == bcr),"region"])
-#         if(length(strn) > 0){oldregs[i,"new.area"] <- strn}
-#         rm("strn")
-#       }
-# 
-#     }
-#     }
-# 
-# 
-# write.csv(oldregs,"old region names.csv",row.names = F)
-
 oldregs = read.csv("old region names.csv",stringsAsFactors = F)
 
 covs = merge(covs,oldregs,by = "geo.area")
@@ -94,23 +64,28 @@ names(prec_cuts) <- c("High","Medium")
 cov_cuts = c(0.5,0.25)
 names(cov_cuts) <- c("High","Medium")
 
-reliab_func_prec <- function(x){
-  y = rep("Low",length(x))
-  y[which(x <= prec_cuts["Medium"])] <- "Medium"
-  y[which(x < prec_cuts["High"])] <- "High"
-  return(y)
-}
-
-reliab_func_cov <- function(x){
-  y = rep("Low",length(x))
-  y[which(x >= cov_cuts["Medium"])] <- "Medium"
-  y[which(x > cov_cuts["High"])] <- "High"
-  return(y)
-}
 
 
 
+# load the maps for CWS webmaps ---------------------------------------
 
+canmap <- rgdal::readOGR(dsn = system.file("maps",
+                                                 package = "bbsBayes"),
+                      layer = "BBS_CWS_strata",
+                      verbose = FALSE)
+
+canmap@data$country <- substr(canmap@data$ST_12,1,2)
+
+canmap <- canmap[canmap$country == "CA",]
+
+
+basmap = rgdal::readOGR(dsn = system.file("maps",
+                                          package = "bbsBayes"),
+                        layer = "BBS_USGS_strata",
+                        verbose = FALSE)
+basmap@data$country <- substr(basmap@data$ST_12,1,2)
+
+basmap <- basmap[basmap$country == "CA",]
 
 
 # Species loop ------------------------------------------------------------
@@ -271,17 +246,6 @@ trst2$coverage = reliab_func_cov(trst2$reliab.cov)
 
 # Identify trends to publish on CWS website -------------------------------
 
-for_web_func <- function(df){
-  y = rep(FALSE,nrow(df))
-  for(j in 1:nrow(df)){
-    if(df[j,"Region_type"] == "continental"){next}
-    sts = unlist(strsplit(df[j,"Strata_included"],split = " ; "))
-    if(any(stringr::str_starts(sts,pattern = "CA-"))){
-    y[j] <- TRUE
-  }
-  }
-  return(y)
-}
 
 
 trst2$For_Web <- for_web_func(trst2)
@@ -289,19 +253,7 @@ trst$For_Web <- for_web_func(trst)
 
 # Generate the web-maps --------------------------------------------------------
 
-generate_web_maps <- function(df){
-  for(j in 1:nrow(df)){
-    if(df[j,"For_Web"]){
-      mapname = paste(ss.n,df[j,"Region_alt"],df[j,"Trend_Time"],"map.png")
-      df[j,"mapfile"] <- mapname
-      
-    }
-  }
-  return(df)
-  
-}
-
-
+trst = generate_web_maps(trst)
 
 
 ###############################################################
@@ -350,7 +302,7 @@ if(fy == 1970){
   print(gf)
   dev.off()
   
-  pdf(paste0("output/geofacets_prov/",plot_header,"_geofacet_strata.pdf"),
+  pdf(paste0("output/geofacets_prov/",plot_header,"_geofacet_prov.pdf"),
       width = 11,
       height = 8.5)
   gf = geofacet_plot(indices_list = inds,
@@ -458,7 +410,7 @@ if(fy == 1970){
   dev.off()
   
 
-# trend maps --------------------------------------------------------------
+# range wide trend maps --------------------------------------------------------------
 
 
   
@@ -573,13 +525,7 @@ if(fy == 1970){
   
 
 
-  
-  ###############################################################
-  ###############################################################
-  ###############################################################
-  ## add the reliability categories
-  
-  
+
   ### append results to previous output
   
 }#short and long-term
