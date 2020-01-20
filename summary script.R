@@ -23,10 +23,22 @@ c_green = brewer.pal(9,"Set1")[3]
 speciestemp = c("Blackpoll Warbler","American Kestrel","Pacific Wren",
                 "Bewick's Wren","LeConte's Sparrow","Horned Lark","Killdeer",
                 "Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee",
-                "Barn Swallow","Bank Swallow")
+                "Barn Swallow","Bank Swallow","LeConte's Sparrow","Horned Lark")
 
-speciestemp2 = c("LeConte's Sparrow","Horned Lark",
-                "Barn Swallow","Bank Swallow")
+speciestemp2 = c("Red Crossbill",
+                 "Clark's Nutcracker",
+                 "Varied Thrush",
+                 "Purple Finch",
+                 "Bohemian Waxwing",
+                 "White-winged Crossbill",
+                 "Cassin's Finch",
+                 "Common Redpoll",
+                 "Pine Grosbeak",
+                 "Pine Siskin",
+                 "Band-tailed Pigeon",
+                 "Evening Grosbeak")
+
+
 
 allspecies.eng = dat_strat$species_strat$english
 allspecies.fre = dat_strat$species_strat$french
@@ -98,7 +110,7 @@ basmap <- basmap[basmap$country == "CA",]
 
 # Species loop ------------------------------------------------------------
 
-
+in_file <- paste0("f:/BBS_Summaries/output/")
 
 for(ssi in which(allspecies.eng %in% speciestemp2)){
  
@@ -110,10 +122,10 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   noise = "heavy_tailed"
   rm(list = c("jags_mod","jags_data"))
   
-  if(file.exists(paste0("model_results/",noise,"/",ss.file,"/jags_mod_full.RData"))){
+  if(file.exists(paste0(in_file,ss.file,"/jags_mod_full.RData"))){
   
-    load(paste0("model_results/",noise,"/",ss.file,"/jags_mod_full.RData"))
-  load(paste0("model_results/",noise,"/",ss.file,"/jags_data.RData"))
+    load(paste0(in_file,ss.file,"/jags_mod_full.RData"))
+  load(paste0(in_file,ss.file,"/jags_data.RData"))
   
   strat = jags_mod$stratify_by
   
@@ -221,11 +233,11 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   
   trst = trs
   trst$Trend_Time = trend_time
-  trst$reliab.prec = trst$Trend_Q0.975-trst$Trend_Q0.025
+  #trst$reliab.prec = trst$Trend_Q0.975-trst$Trend_Q0.025
   
   trst2 = trs2
   trst2$Trend_Time = trend_time
-  trst2$reliab.prec = trst2$Trend_Q0.975-trst2$Trend_Q0.025
+  #trst2$reliab.prec = trst2$Trend_Q0.975-trst2$Trend_Q0.025
   
   
 
@@ -248,10 +260,10 @@ trst2 = merge(trst2,
 
 # insert reliability categories---------------------------------------------------
 
-trst$precision = reliab_func_prec(trst$reliab.prec)
+trst$precision = reliab_func_prec(trst$Width_of_95_percent_Credible_Interval)
 trst$coverage = reliab_func_cov(trst$reliab.cov)
 
-trst2$precision = reliab_func_prec(trst2$reliab.prec)
+trst2$precision = reliab_func_prec(trst2$Width_of_95_percent_Credible_Interval)
 trst2$coverage = reliab_func_cov(trst2$reliab.cov)
 
 
@@ -327,7 +339,7 @@ if(fy == 1970){
   dev.off()
  
 
-# index plots, all single pdf for a species and time-series ---------------
+# Basic index plots, all single pdf for a species and time-series ---------------
 
   
 
@@ -344,7 +356,8 @@ if(fy == 1970){
   
   
   
-  ###### generate the require ggplot components to add to each ipp within a loop
+
+  # Complex index plots, all single pdf for a species and time-series ---------------
   
   
   pdf(paste0("output/Indices_comparison/",plot_header,"_Indices_comparison.pdf"),
@@ -373,6 +386,12 @@ if(fy == 1970){
       ttind2 = indsdf2[which(indsdf2$Region_alt == treg),]
     }
     
+    if(nrow(ttind) == 0 & grepl(pattern = "_BCR_",treg,fixed = T)){
+      treg = gsub(treg,pattern = "_", replacement = " ")
+      treg = gsub(treg,pattern = " BCR ", replacement = "-BCR_")
+      ttind = indsdf[which(indsdf$Region_alt == treg),]
+      ttind2 = indsdf2[which(indsdf2$Region_alt == treg),]
+    }
     
     ttp = ipp[[i]]
     ## add mean counts, number of routes, trend, nnzero
@@ -383,7 +402,7 @@ if(fy == 1970){
     trtmp2 = trs2[which(trs2$Region_alt == treg),]
     
     st_exc = unique(trtmp$Strata_excluded)
-    if(st_exc != ""){
+    if(length(st_exc) > 0){
       if(nchar(st_exc) > 20){
         stx2 = unlist(strsplit(st_exc,split = " ; "))
         st_exc <- paste("Excluding",length(stx2),"strata")

@@ -6,7 +6,8 @@ reliab_func_prec <- function(x){
 }
 
 reliab_func_cov <- function(x){
-  y = rep("Low",length(x))
+  y = rep(NA,length(x))
+  y[which(x < cov_cuts["Medium"])] <- "Low"
   y[which(x >= cov_cuts["Medium"])] <- "Medium"
   y[which(x > cov_cuts["High"])] <- "High"
   return(y)
