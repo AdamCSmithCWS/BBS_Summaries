@@ -23,22 +23,40 @@ c_green = brewer.pal(9,"Set1")[3]
 speciestemp = c("Blackpoll Warbler","American Kestrel","Pacific Wren",
                 "Bewick's Wren","LeConte's Sparrow","Horned Lark","Killdeer",
                 "Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee",
-                "Barn Swallow","Bank Swallow","LeConte's Sparrow","Horned Lark")
+                "Barn Swallow","Bank Swallow")
+speciestemp = c("Tree Swallow","Chimney Swift","Common Nighthawk",
+                "Eastern Whip-poor-will","Purple Martin","Black Swift")
 
-speciestemp2 = c("Red Crossbill",
-                 "Clark's Nutcracker",
-                 "Varied Thrush",
-                 "Purple Finch",
-                 "Bohemian Waxwing",
-                 "White-winged Crossbill",
-                 "Cassin's Finch",
-                 "Common Redpoll",
-                 "Pine Grosbeak",
-                 "Pine Siskin",
+# speciestemp2 = c("Red Crossbill",
+#                  "Clark's Nutcracker",
+#                  "Varied Thrush",
+#                  "Purple Finch",
+#                  "Bohemian Waxwing",
+#                  "White-winged Crossbill",
+#                  "Cassin's Finch",
+#                  "Common Redpoll",
+#                  "Pine Grosbeak",
+#                  "Pine Siskin",
+#                  "Band-tailed Pigeon",
+#                  "Evening Grosbeak")
+
+speciestemp2 = c("Ferruginous Hawk",
                  "Band-tailed Pigeon",
-                 "Evening Grosbeak")
+                 "Lesser Yellowlegs",
+                 "Great Blue Heron",
+                 "Short-eared Owl",
+                 "Golden-winged Warbler")
 
 
+speciestemp2 = c("Chestnut-collared Longspur",
+                 "Black-throated Green Warbler",
+                 "Bay-breasted Warbler",
+                 "Cape May Warbler")
+
+speciestemp2 = c("Canada Warbler",
+                 "Black-throated Green Warbler",
+                 "Bay-breasted Warbler",
+                 "Cape May Warbler")
 
 allspecies.eng = dat_strat$species_strat$english
 allspecies.fre = dat_strat$species_strat$french
@@ -53,7 +71,11 @@ if(COSEWIC){
 rollTrend = "Trend"
 }
 
-
+GEN_time = F
+if(GEN_time){
+gen_time_3 = data.frame(species.eng = speciestemp2,
+                        gen_time = c(21,13,12,22,12,10))
+}
 
 # qs = c(0.025,0.05,0.95,0.975)
 YYYY = 2018 ## BBS data version year
@@ -81,6 +103,8 @@ names(prec_cuts) <- c("High","Medium")
 cov_cuts = c(0.5,0.25)
 names(cov_cuts) <- c("High","Medium")
 
+pool_cuts = c(0.33,0.1)
+names(pool_cuts) <- c("High","Medium")
 
 
 
@@ -112,6 +136,9 @@ basmap <- basmap[basmap$country == "CA",]
 
 in_file <- paste0("f:/BBS_Summaries/output/")
 
+
+mx_back = 5 # set maximum extrapolation of estimates in regions with no data
+
 for(ssi in which(allspecies.eng %in% speciestemp2)){
  
   ss = allspecies.eng[ssi]
@@ -119,7 +146,10 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   ss.n = allspecies.num[ssi]
   ss.file = allspecies.file[ssi]
   
-  noise = "heavy_tailed"
+  if(GEN_time){
+    short_time = gen_time_3[which(gen_time_3$species.eng == ss),"gen_time"]
+  }
+  
   rm(list = c("jags_mod","jags_data"))
   
   if(file.exists(paste0(in_file,ss.file,"/jags_mod_full.RData"))){
@@ -129,100 +159,77 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   
   strat = jags_mod$stratify_by
   
-  
 
-###
-  #testing alternate regions
-  # tmp = get_composite_regions(strata_type = jags_mod$stratify_by)
-  # tmp$boreal = "Eastern"
-  # tmp[which(tmp$Province_State %in% c("British Columbia",
-  #                                     "Alberta",
-  #                                     "Northwest Territories",
-  #                                     "Saskatchewan",
-  #                                     "Yukon",
-  #                                     "Alaska")),"boreal"] = "Western"
-  # indstmp = generate_regional_indices(jags_mod = jags_mod,
-  #                           jags_data = jags_data,
-  #                           #quantiles = qs,
-  #                           alt_region_names = tmp,
-  #                           regions = c("boreal","continental","national","stratum", "prov_state","bcr","bcr_by_country"),
-  #                           startyear = min(1995,fy),
-  #                           max_backcast = 5)
-  # 
-  # trs = generate_regional_trends(indices = indstmp,
-  #                                Min_year = fy,
-  #                                #quantiles = qs,
-  #                                slope = T,
-  #                                prob_decrease = c(0,25,30,50),
-  #                                prob_increase = c(0,33,100))
-  
-  
   
   
   # Loop for short and long-term trends and indices -------------------------
   
   for(fy in c(1970,YYYY-short_time)){
     if(fy == 1970){trend_time = "Long-term"}else{trend_time = "Short-term"}
-    plot_header = paste(ss,noise,trend_time,sep = "_")
+    plot_header = paste(ss,trend_time,sep = "_")
     
-  inds = generate_regional_indices(jags_mod = jags_mod,
+    ### indices to visualise the trajectories (with year-effects)
+  inds_vis = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
                                    regions = c("continental","national", "prov_state","bcr","stratum","bcr_by_country"),
-                                   startyear = min(1995,fy),
-                                   max_backcast = 5)
+                                   #max_backcast = 5,
+                                   max_backcast = mx_back,
+                                   startyear = min(1995,fy))
  
-  
-  inds2 = generate_regional_indices(jags_mod = jags_mod,
+    ### indices to calculate trends (without year-effects)
+  inds_tr = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
                                    regions = c("continental","national", "prov_state","bcr","stratum","bcr_by_country"),
                                    startyear = min(1995,fy),
-                                   max_backcast = 5,
+                                   max_backcast = mx_back,
+                                   #max_backcast = 5,
                                    alternate_n = "n3")
   
-  indst = inds$data_summary
-  indst$Trend_Time = trend_time
+  inds_vist = inds_vis$data_summary
+  inds_vist$Trend_Time = trend_time
   
 
   
-  indst2 = inds2$data_summary
-  indst2$Trend_Time = trend_time
+  inds_trt = inds_tr$data_summary
+  inds_trt$Trend_Time = trend_time
   
   if(fy == 1970){
 
-    indsout = indst
-    rm("indst")
+    inds_visout = inds_vist
+    rm("inds_vist")
     
 
-    indsout2 = indst2
-    rm("indst2")
+    inds_trout = inds_trt
+    rm("inds_trt")
     
   }else{
  
-    indsout = rbind(indsout,indst)
-    rm("indst")
+    inds_visout = rbind(inds_visout,inds_vist)
+    rm("inds_vist")
     
 
-    indsout2 = rbind(indsout2,indst2)
-    rm("indst2")
+    inds_trout = rbind(inds_trout,inds_trt)
+    rm("inds_trt")
     
-    write.csv(indsout,paste0("output/trends_indices/",paste(ss.file,noise,sep = "_")," annual indices.csv"),row.names = F)
+    write.csv(inds_visout,paste0("output/trends_indices/",paste(ss.file,sep = "_")," annual indices.csv"),row.names = F)
   
     
-    write.csv(indsout2,paste0("output/alternate_trends_indices/",paste(ss.file,noise,sep = "_"),"smooth annual indices.csv"),row.names = F)
+    write.csv(inds_trout,paste0("output/alternate_trends_indices/",paste(ss.file,sep = "_"),"smooth annual indices.csv"),row.names = F)
   }
   
   
-  
-  trs = generate_regional_trends(indices = inds2,
+  rm("trs_web")
+  rm("trs_alt")
+  trs_web = generate_regional_trends(indices = inds_tr,
                                  Min_year = fy,
                                  #quantiles = qs,
                                  slope = T,
                                  prob_decrease = c(0,25,30,50),
                                  prob_increase = c(0,33,100))
   
-  trs2 = generate_regional_trends(indices = inds,
+  trs_alt = generate_regional_trends(indices = inds_vis,
                                  Min_year = fy,
                                  #quantiles = qs,
                                  slope = T,
@@ -231,12 +238,60 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   
   
   
-  trst = trs
-  trst$Trend_Time = trend_time
+  
+  # Pooling Factor Calculations ---------------------------------------------
+  
+  stratlist = unique(data.frame(strat_name = jags_data$strat_name,
+                                strat = jags_data$strat))
+  stratlist = stratlist[order(stratlist$strat),]
+  stratnames = stratlist$strat_name
+
+  sdbeta.mat = jags_mod$sims.list[["sdbeta"]]
+  BXmat = jags_mod$sims.list[["B.X"]]
+  beta.x.mat = jags_mod$sims.list[["beta.X"]]
+  
+  poola = NA
+  pool = matrix(NA,nrow = jags_data$nstrata,ncol = jags_data$nknots)
+  for (k in 1:jags_data$nknots){
+    bdif = beta.x.mat[,,k]-BXmat[,k]
+    pm_var_strat_bdif = mean (apply (bdif, 1, var))
+    
+    var_pmean_bdifa = var(apply(bdif,2,mean))
+    
+    #poola[k] <- min(var_pmean_bdifa/pm_var_strat_bdif  ,1)
+    
+    for(s in 1:jags_data$nstrata){
+      pvar_mean_bdif = var(bdif[,s])
+      
+      pool[s,k] <- min(pvar_mean_bdif/pm_var_strat_bdif  ,1)
+      
+      
+    }
+    
+    
+  }
+  
+  if(fy < 1990){
+    pool_by_strat = rowMeans(pool[,-c(4:10)]) #summarizing the pooling for the outer knots
+  }else{
+    pool_by_strat = rowMeans(pool[,-c(1:10)]) #summarizing the pooling for the outer knots
+  }
+  
+  for(j in 1:nrow(trs_web)){
+    ww = which(stratlist$strat_name %in% unlist(str_split(trs_web[j,"Strata_included"],pattern = " ; ")))
+    trs_web[j,"pool"] = 1-mean(pool_by_strat[ww])
+    trs_alt[j,"pool"] = 1-mean(pool_by_strat[ww])
+    
+  }
+  
+  
+  # END pooling factor ------------------------------------------------------
+  
+  trs_web$Trend_Time = trend_time
   #trst$reliab.prec = trst$Trend_Q0.975-trst$Trend_Q0.025
   
-  trst2 = trs2
-  trst2$Trend_Time = trend_time
+  trs_alt = trs_alt
+  trs_alt$Trend_Time = trend_time
   #trst2$reliab.prec = trst2$Trend_Q0.975-trst2$Trend_Q0.025
   
   
@@ -244,66 +299,84 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
 # insert last year's coverage estimates -----------------------------------
 
   covsp = covs[which(covs$sp == ss.n & covs$trendtype == tolower(trend_time)),]
-trst = merge(trst,
+  trs_web = merge(trs_web,
              covsp[,c("new.area","reliab.cov")],
              by.x = "Region_alt",
              by.y = "new.area",
              all.x = T,sort = F)  
 
-trst2 = merge(trst2,
+  trs_alt = merge(trs_alt,
              covsp[,c("new.area","reliab.cov")],
              by.x = "Region_alt",
              by.y = "new.area",
              all.x = T,sort = F)
 
-
+  
+ 
+  
 
 # insert reliability categories---------------------------------------------------
 
-trst$precision = reliab_func_prec(trst$Width_of_95_percent_Credible_Interval)
-trst$coverage = reliab_func_cov(trst$reliab.cov)
-
-trst2$precision = reliab_func_prec(trst2$Width_of_95_percent_Credible_Interval)
-trst2$coverage = reliab_func_cov(trst2$reliab.cov)
-
-
+  trs_web$precision = reliab_func_prec(trs_web$Width_of_95_percent_Credible_Interval)
+  trs_web$coverage = reliab_func_cov(trs_web$reliab.cov)
+  trs_web$local_data = reliab_func_pool(trs_web$pool)
+  
+  trs_alt$precision = reliab_func_prec(trs_alt$Width_of_95_percent_Credible_Interval)
+  trs_alt$coverage = reliab_func_cov(trs_alt$reliab.cov)
+  trs_alt$local_data = reliab_func_pool(trs_alt$pool)
+  
+  trs_web$Reliability = factor(rep("Low",nrow(trs_web)),levels = c("Low","Medium","High"),ordered = T)
+  for(j in 1:nrow(trs_web)){
+  trs_web[j,"Reliability"] = levels(trs_web$Reliability)[min(as.integer(trs_web[j,c("precision","coverage","local_data")]),na.rm = T)]
+  }
+  trs_alt$Reliability = factor(rep("Low",nrow(trs_alt)),levels = c("Low","Medium","High"),ordered = T)
+  for(j in 1:nrow(trs_alt)){
+    trs_alt[j,"Reliability"] = levels(trs_alt$Reliability)[min(as.integer(trs_alt[j,c("precision","coverage","local_data")]),na.rm = T)]
+  }
 # Identify trends to publish on CWS website -------------------------------
 
 
 
-trst2$For_Web <- for_web_func(trst2)
-trst$For_Web <- for_web_func(trst)
+  trs_web$For_Web <- for_web_func(trs_web)
+  trs_alt$For_Web <- for_web_func(trs_alt)
 
 # Generate the web-maps --------------------------------------------------------
 if(WEBMAP){
-trst = generate_web_maps(trst)
+trs_web = generate_web_maps(trs_web)
 }
 
-###############################################################
-###############################################################
-###############################################################
-## add the forweb column
 
 
 # Write the species trend files -------------------------------------------
 
 
+# append species names ----------------------------------------------------
+
+  trs_web$species = ss
+  trs_web$espece = ss.f
+  trs_web$bbs_num = ss.n
+  
+
+  trs_alt$species = ss
+  trs_alt$espece = ss.f
+  trs_alt$bbs_num = ss.n
+  
 
 if(fy == 1970){
-  trstout = trst
-  rm("trst")
+  trstout = trs_web
+  #rm("trs_web")
   
-  trstout2 = trst2
-  rm("trst2")
+  trstout2 = trs_alt
+  #rm("trs_alt")
   
 }else{
-  trstout = rbind(trstout,trst)
-  rm("trst")
-  write.csv(trstout,paste0("output/trends_indices/",paste(ss.file,noise,sep = "_")," trends.csv"),row.names = F)
+  trstout = rbind(trstout,trs_web)
+  #rm("trs_web")
+  write.csv(trstout,paste0("output/trends_indices/",paste(ss.file,sep = "_")," trends.csv"),row.names = F)
   
-  trstout2 = rbind(trstout2,trst2)
-  rm("trst2")
-  write.csv(trstout2,paste0("output/alternate_trends_indices/",paste(ss.file,noise,sep = "_")," trends incl yeareffects.csv"),row.names = F)
+  trstout2 = rbind(trstout2,trs_alt)
+  #rm("trs_alt")
+  write.csv(trstout2,paste0("output/alternate_trends_indices/",paste(ss.file,sep = "_")," trends incl yeareffects.csv"),row.names = F)
 }
 
 
@@ -315,11 +388,11 @@ if(fy == 1970){
   pdf(paste0("output/geofacets_strata/",plot_header,"_geofacet_strata.pdf"),
       width = 11,
       height = 8.5)
-  gf = geofacet_plot(indices_list = inds,
+  gf = geofacet_plot(indices_list = inds_vis,
                      select = T,
                      stratify_by = "bbs_cws",
                      multiple = T,
-                     trends = trs,
+                     trends = trs_web,
                      slope = F,
                      species = ss)
   print(gf)
@@ -328,11 +401,11 @@ if(fy == 1970){
   pdf(paste0("output/geofacets_prov/",plot_header,"_geofacet_prov.pdf"),
       width = 11,
       height = 8.5)
-  gf = geofacet_plot(indices_list = inds,
+  gf = geofacet_plot(indices_list = inds_vis,
                      select = T,
                      stratify_by = "bbs_cws",
                      multiple = F,
-                     trends = trs,
+                     trends = trs_web,
                      slope = F,
                      species = ss)
   print(gf)
@@ -343,7 +416,7 @@ if(fy == 1970){
 
   
 
-  ipp = plot_strata_indices(indices_list = inds,
+  ipp = plot_strata_indices(indices_list = inds_vis,
                             min_year = min(1995,fy),
                             add_observed_means = F,
                             species = ss)
@@ -364,8 +437,8 @@ if(fy == 1970){
       width = 8.5,
       height = 6)
   
-  indsdf = inds$data_summary
-  indsdf2 = inds2$data_summary
+  indsdf = inds_vis$data_summary
+  indsdf2 = inds_tr$data_summary
   
   for(i in 1:length(ipp)){
     
@@ -397,23 +470,25 @@ if(fy == 1970){
     ## add mean counts, number of routes, trend, nnzero
     # transform count variables to mirror existing axis
     
-    trtmp = trs[which(trs$Region_alt == treg),]
+    trtmp = trs_web[which(trs_web$Region_alt == treg),]
     
-    trtmp2 = trs2[which(trs2$Region_alt == treg),]
+    trtmp2 = trs_alt[which(trs_alt$Region_alt == treg),]
     
     st_exc = unique(trtmp$Strata_excluded)
-    if(length(st_exc) > 0){
-      if(nchar(st_exc) > 20){
-        stx2 = unlist(strsplit(st_exc,split = " ; "))
+    if(st_exc != ""){
+      stx2 = unlist(strsplit(st_exc,split = " ; "))
+      
+      if(length(stx2) > 2){
         st_exc <- paste("Excluding",length(stx2),"strata")
       }else{
         st_exc <- paste("Excluding",st_exc)
-      }}
+      }
+    }
     
     
-     trlab = paste("Slope_Trend",round(signif(trtmp2$Slope_Trend,2),1),"%/yr","since",trtmp2$Start_year,st_exc,
-                   round(signif(trtmp2$Slope_Trend_Q0.025,2),1),":",round(signif(trtmp2$Slope_Trend_Q0.975,2),1))
-     trlab2 = paste("GAM_Trend",round(signif(trtmp$Trend,2),1),"%/yr","since",trtmp$Start_year,st_exc,
+     # trlab = paste("Slope_Trend",round(signif(trtmp2$Slope_Trend,2),1),"%/yr","since",trtmp2$Start_year,st_exc,
+     #               round(signif(trtmp2$Slope_Trend_Q0.025,2),1),":",round(signif(trtmp2$Slope_Trend_Q0.975,2),1))
+     trlab2 = paste("Trend",round(signif(trtmp$Trend,2),1),"%/yr","since",trtmp$Start_year,st_exc,
                     round(signif(trtmp$Trend_Q0.025,2),1),":",round(signif(trtmp$Trend_Q0.975,2),1))
      
     ulim = max(ttind$Index_q_0.975)
@@ -431,7 +506,7 @@ if(fy == 1970){
       geom_col(data = ttind,aes(x = Year, y = prts.sc),width = 0.5,fill = c_green,alpha = 0.1)+
       geom_text_repel(data = ttmax,aes(x = Year, y = prts.sc,label = lbl),nudge_y = 0.1*ulim,colour = c_green,alpha = 0.5,size = 3)+
     geom_text_repel(data = ttmin,aes(x = Year, y = obs_mean,label = lbl),nudge_y = 0.1*ulim,colour = c_blue,alpha = 0.5,size = 3)+
-    annotate("text",x = mean(c(fy,YYYY)),y = ulim*0.9,label = trlab)+
+    #annotate("text",x = mean(c(fy,YYYY)),y = ulim*0.9,label = trlab)+
     annotate("text",x = mean(c(fy,YYYY)),y = ulim*0.8,label = trlab2, colour = c_orng)
     
     print(np)
@@ -447,7 +522,7 @@ if(fy == 1970){
   pdf(paste0("output/Trend_maps/",plot_header,"_trend_map.pdf"),
       width = 8.5,
       height = 6)
-  pp = generate_map(trend = trs,select = T,stratify_by = strat,slope = F)
+  pp = generate_map(trend = trs_web,select = T,stratify_by = strat,slope = F)
   print(pp)
   dev.off()
   
@@ -466,7 +541,7 @@ if(COSEWIC){
                                    #quantiles = qs,
                                    regions = c("continental","national","prov_state","bcr","stratum"),
                                    startyear = fy2,
-                                   max_backcast = 5,
+                                   max_backcast = mx_back,
                                    alternate_n = "n3")
 
   
@@ -559,7 +634,7 @@ if(COSEWIC){
   ### append results to previous output
   
 }#short and long-term
- #} #noise
+
   
   }#if output exists
   
