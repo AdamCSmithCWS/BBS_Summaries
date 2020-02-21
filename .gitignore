@@ -9,6 +9,7 @@
 *model_results/
 *output/
 *WebMaps/
+*estimates/
 
 # Example code in package build process
 *-Ex.R

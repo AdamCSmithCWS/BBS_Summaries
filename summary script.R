@@ -5,7 +5,7 @@ library(pacman)
 
 
 p_load(char = c("bbsBayes","ggplot2","ggrepel","RColorBrewer","tidyverse",
-                "doParallel","foreach"),character.only = T)
+                "doParallel","foreach","dplyr"),character.only = T)
 
 
 sapply(list.files(pattern="[.]R$", path="functions/", full.names=TRUE), source);
@@ -160,6 +160,10 @@ registerDoParallel(cluster)
 
 nspecies <- length(allspecies.eng)
 
+
+
+
+
 allsum <- foreach(ssi = 1:nspecies,
                   .packages = "bbsBayes",
                   .inorder = FALSE,
@@ -246,10 +250,10 @@ allsum <- foreach(ssi = 1:nspecies,
     inds_trout = rbind(inds_trout,inds_trt)
     rm("inds_trt")
     if(fy == YYYY-short_time){
-    write.csv(inds_visout,paste0("output/trends_indices/",paste(ss.file,sep = "_")," annual indices.csv"),row.names = F)
+    write.csv(inds_visout,paste0("estimates/trends_indices/",paste(ss.file,sep = "_")," annual indices.csv"),row.names = F)
   
     
-    write.csv(inds_trout,paste0("output/alternate_trends_indices/",paste(ss.file,sep = "_"),"smooth annual indices.csv"),row.names = F)
+    write.csv(inds_trout,paste0("estimates/alternate_trends_indices/",paste(ss.file,sep = "_"),"smooth annual indices.csv"),row.names = F)
     }
   }
     
@@ -407,11 +411,11 @@ if(fy == 1970){
 }else{
   trstout = rbind(trstout,trs_web)
   #rm("trs_web")
-  write.csv(trstout,paste0("output/trends_indices/",paste(ss.file,sep = "_")," trends.csv"),row.names = F)
+  write.csv(trstout,paste0("estimates/trends_indices/",paste(ss.file,sep = "_")," trends.csv"),row.names = F)
   
   trstout2 = rbind(trstout2,trs_alt)
   #rm("trs_alt")
-  write.csv(trstout2,paste0("output/alternate_trends_indices/",paste(ss.file,sep = "_")," trends incl yeareffects.csv"),row.names = F)
+  write.csv(trstout2,paste0("estimates/alternate_trends_indices/",paste(ss.file,sep = "_")," trends incl yeareffects.csv"),row.names = F)
 }
 
 
@@ -420,7 +424,7 @@ if(fy == 1970){
 
 
 
-  pdf(paste0("output/geofacets_strata/",plot_header,"_geofacet_strata.pdf"),
+  pdf(paste0("estimates/geofacets_strata/",plot_header,"_geofacet_strata.pdf"),
       width = 11,
       height = 8.5)
   gf = geofacet_plot(indices_list = inds_vis,
@@ -433,7 +437,7 @@ if(fy == 1970){
   print(gf)
   dev.off()
   
-  pdf(paste0("output/geofacets_prov/",plot_header,"_geofacet_prov.pdf"),
+  pdf(paste0("estimates/geofacets_prov/",plot_header,"_geofacet_prov.pdf"),
       width = 11,
       height = 8.5)
   gf = geofacet_plot(indices_list = inds_vis,
@@ -451,12 +455,12 @@ if(fy == 1970){
 
   
 
-  ipp = plot_strata_indices(indices_list = inds_vis,
+  ipp = plot_indices(indices_list = inds_vis,
                             min_year = min(short_start,fy),
                             add_observed_means = F,
                             species = ss)
   
-  pdf(paste0("output/Indices/",plot_header,"_Indices.pdf"),
+  pdf(paste0("estimates/Indices/",plot_header,"_Indices.pdf"),
       width = 8.5,
       height = 6)
   print(ipp)
@@ -468,7 +472,7 @@ if(fy == 1970){
   # Complex index plots, all single pdf for a species and time-series ---------------
   
   
-  pdf(paste0("output/Indices_comparison/",plot_header,"_Indices_comparison.pdf"),
+  pdf(paste0("estimates/Indices_comparison/",plot_header,"_Indices_comparison.pdf"),
       width = 8.5,
       height = 6)
   
@@ -554,7 +558,7 @@ if(fy == 1970){
 
 
   
-  pdf(paste0("output/Trend_maps/",plot_header,"_trend_map.pdf"),
+  pdf(paste0("estimates/Trend_maps/",plot_header,"_trend_map.pdf"),
       width = 8.5,
       height = 6)
   pp = generate_map(trend = trs_web,select = T,stratify_by = strat,slope = F)
@@ -610,7 +614,7 @@ if(COSEWIC){
                                           paste("-50% over",short_time,"years")),
                        Year = rep(min(tcos$End_year),2))
   
-  pdf(paste0("output/Rolling_Trends/",plot_header,"_Rolling_Trends.pdf"),
+  pdf(paste0("estimates/Rolling_Trends/",plot_header,"_Rolling_Trends.pdf"),
       width = 8.5,
       height = 6)
   for(rg in unique(tcos$Region_alt)){
