@@ -4,7 +4,8 @@
 library(pacman)
 
 
-p_load(char = c("bbsBayes","ggplot2","ggrepel","RColorBrewer","tidyverse"),character.only = T)
+p_load(char = c("bbsBayes","ggplot2","ggrepel","RColorBrewer","tidyverse",
+                "doParallel","foreach"),character.only = T)
 
 
 sapply(list.files(pattern="[.]R$", path="functions/", full.names=TRUE), source);
@@ -20,39 +21,39 @@ c_purp = brewer.pal(9,"Set1")[4]
 c_green = brewer.pal(9,"Set1")[3]
 
 
-speciestemp = c("Blackpoll Warbler","American Kestrel","Pacific Wren",
-                "Bewick's Wren","LeConte's Sparrow","Horned Lark","Killdeer",
-                "Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee",
-                "Barn Swallow","Bank Swallow")
-speciestemp = c("Tree Swallow","Chimney Swift","Common Nighthawk",
-                "Eastern Whip-poor-will","Purple Martin","Black Swift")
-
-# speciestemp2 = c("Red Crossbill",
-#                  "Clark's Nutcracker",
-#                  "Varied Thrush",
-#                  "Purple Finch",
-#                  "Bohemian Waxwing",
-#                  "White-winged Crossbill",
-#                  "Cassin's Finch",
-#                  "Common Redpoll",
-#                  "Pine Grosbeak",
-#                  "Pine Siskin",
-#                  "Band-tailed Pigeon",
-#                  "Evening Grosbeak")
-
-
-
-
-speciestemp2 = c("Chestnut-collared Longspur",
-                 "Black-throated Green Warbler",
-                 "Bay-breasted Warbler",
-                 "Cape May Warbler")
-
-speciestemp2 = c("Canada Warbler",
-                 "Black-throated Green Warbler",
-                 "Bay-breasted Warbler",
-                 "Cape May Warbler")
-speciestemp2 = c("Tree Swallow")
+# speciestemp = c("Blackpoll Warbler","American Kestrel","Pacific Wren",
+#                 "Bewick's Wren","LeConte's Sparrow","Horned Lark","Killdeer",
+#                 "Bobolink","McCown's Longspur","Canada Warbler","Western Wood-Pewee",
+#                 "Barn Swallow","Bank Swallow")
+# speciestemp = c("Tree Swallow","Chimney Swift","Common Nighthawk",
+#                 "Eastern Whip-poor-will","Purple Martin","Black Swift")
+# 
+# # speciestemp2 = c("Red Crossbill",
+# #                  "Clark's Nutcracker",
+# #                  "Varied Thrush",
+# #                  "Purple Finch",
+# #                  "Bohemian Waxwing",
+# #                  "White-winged Crossbill",
+# #                  "Cassin's Finch",
+# #                  "Common Redpoll",
+# #                  "Pine Grosbeak",
+# #                  "Pine Siskin",
+# #                  "Band-tailed Pigeon",
+# #                  "Evening Grosbeak")
+# 
+# 
+# 
+# 
+# speciestemp2 = c("Chestnut-collared Longspur",
+#                  "Black-throated Green Warbler",
+#                  "Bay-breasted Warbler",
+#                  "Cape May Warbler")
+# 
+# speciestemp2 = c("Canada Warbler",
+#                  "Black-throated Green Warbler",
+#                  "Bay-breasted Warbler",
+#                  "Cape May Warbler")
+# speciestemp2 = c("Tree Swallow")
 
 allspecies.eng = dat_strat$species_strat$english
 allspecies.fre = dat_strat$species_strat$french
@@ -72,7 +73,7 @@ if(COSEWIC){
 rollTrend = "Trend"
 }
 
-GEN_time = T
+GEN_time = F
 if(GEN_time){
 gen_time_3 = data.frame(species.eng = speciestemp2,
                         gen_time = c(21,13,12,22,12,10))
@@ -135,14 +136,36 @@ basmap <- basmap[basmap$country == "CA",]
 
 # Species loop ------------------------------------------------------------
 
-in_file <- paste0("f:/BBS_Summaries/output/")
+external_drive <- FALSE
+if(external_drive){
+  in_file <- paste0("f:/BBS_Summaries/output/")
+}else{
+  in_file <- paste0("output/")
+  
+}
+
 
 
 mx_back = 5 # set maximum extrapolation of estimates in regions with no data
 
 short_start = 1995 #start year for the short-term trend annual indices, may be moved back but will affect the included strata depending on the value of mx_back
 
-for(ssi in which(allspecies.eng %in% speciestemp2)){
+
+
+# parallel setup ----------------------------------------------------------
+
+n_cores <- 25
+cluster <- makeCluster(n_cores,type = "PSOCK")
+registerDoParallel(cluster)
+
+nspecies <- length(allspecies.eng)
+
+allsum <- foreach(ssi = 1:nspecies,
+                  .packages = "bbsBayes",
+                  .inorder = FALSE,
+                  .errorhandling = "pass") %dopar% {
+
+# for(ssi in which(allspecies.eng %in% speciestemp2)){
  
   ss = allspecies.eng[ssi]
   ss.f = allspecies.fre[ssi]
@@ -652,6 +675,8 @@ if(COSEWIC){
   
 }#species loop
 
+
+stopCluster(cl = cluster)
 ### read in the full files
 ### sort and re-name relevant columns to match webcontent exactly
 ### consider the strata names issue - must match last year's web content
