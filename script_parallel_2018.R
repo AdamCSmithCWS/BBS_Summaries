@@ -19,12 +19,12 @@ dir.create("output", showWarnings = F)
 # library(devtools)
 # devtools::install_github("AdamCSmithCWS/bbsBayes")
 
+library(dplyr)
+library(tidyverse)
 
 library(bbsBayes)
 library(foreach)
 library(doParallel)
-library(dplyr)
-library(tidyverse)
 
 #fetch_bbs_data()
 
@@ -43,7 +43,7 @@ allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",rep
 
 
 # Set up parallel stuff
-n_cores <- 20
+n_cores <- 15
 cluster <- makeCluster(n_cores, type = "PSOCK")
 registerDoParallel(cluster)
 
@@ -55,7 +55,26 @@ nrecs_sp = (table(stratified_data$bird_strat$AOU))
 
 sp.order = sample(size = nspecies,x = c(1:nspecies),replace = F)
 
-foreach(i = sp.order,
+j = 0
+sp.rerun = 0
+for(i in sp.order){
+  species = allspecies.file[i]
+  species.eng = allspecies.eng[i]
+  species.num = allspecies.num[i]
+  
+  sp.dir = paste0("output/", species)
+  nrecs = nrecs_sp[paste(species.num)]
+  
+  if(!is.na(nrecs) & nrecs > 100){
+    
+if(file.exists(paste0(sp.dir, "/jags_mod_full.RData")) == F){
+  j = j+1
+  sp.rerun[j] = i 
+}
+  }
+}
+
+fullrun <- foreach(i = sp.rerun,
         .packages = 'bbsBayes',
         .inorder = FALSE,
         .errorhandling = "pass") %dopar%
@@ -66,11 +85,14 @@ foreach(i = sp.order,
     species.num = allspecies.num[i]
     
   sp.dir = paste0("output/", species)
-  dir.create(sp.dir)
+  
+  if(file.exists(paste0(sp.dir, "/jags_mod_full.RData")) == F){
+    
+  dir.create(sp.dir, showWarnings = F)
   
   nrecs = nrecs_sp[paste(species.num)]
   
-  if(nrecs > 100){
+ if(nrecs > 100){
   #### identifying the K folds for cross-validation
     ## selecting stratified samples that remove 10% of data within each stratum
   jags_data <- prepare_jags_data(strat_data = stratified_data,
@@ -80,7 +102,8 @@ foreach(i = sp.order,
                                  heavy_tailed = T)
   
   
-
+  save(jags_data, file = paste0(sp.dir, "/jags_data.RData"))
+  
 
   
 
@@ -89,13 +112,14 @@ foreach(i = sp.order,
                                n_burnin = n_burnin,
                                n_chains = n_chains,
                                n_thin = n_thin,
-                               parallel = T,
+                               parallel = F,
                           parameters_to_save = c("n","n3","nu","B.X","beta.X","strata","sdbeta","sdX"),
                           modules = NULL)
      save(jags_mod, file = paste0(sp.dir, "/jags_mod_full.RData"))
-     save(jags_data, file = paste0(sp.dir, "/jags_data.RData"))
      
+     rm(list = c("jags_mod","jags_data"))
 
+  }
   }#end if nrecs > 100
   
     }#end of full model parallel loop
@@ -103,7 +127,7 @@ foreach(i = sp.order,
 stopCluster(cl = cluster)
 
 
-
+#save(list = c("sp.rerun"),file = "sp.rerun.RData")
 
 
 
