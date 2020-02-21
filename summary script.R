@@ -194,7 +194,7 @@ allsum <- foreach(ssi = 1:nspecies,
   
   # Loop for short and long-term trends and indices -------------------------
   
-  for(fy in c(1970,1980,YYYY-short_time)){
+  for(fy in c(1970,YYYY-short_time)){
     if(fy == 1970){trend_time = "Long-term"
     }else{
     if(fy == YYYY-short_time){
