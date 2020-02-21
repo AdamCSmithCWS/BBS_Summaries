@@ -40,12 +40,7 @@ speciestemp = c("Tree Swallow","Chimney Swift","Common Nighthawk",
 #                  "Band-tailed Pigeon",
 #                  "Evening Grosbeak")
 
-speciestemp2 = c("Ferruginous Hawk",
-                 "Band-tailed Pigeon",
-                 "Lesser Yellowlegs",
-                 "Great Blue Heron",
-                 "Short-eared Owl",
-                 "Golden-winged Warbler")
+
 
 
 speciestemp2 = c("Chestnut-collared Longspur",
@@ -57,6 +52,7 @@ speciestemp2 = c("Canada Warbler",
                  "Black-throated Green Warbler",
                  "Bay-breasted Warbler",
                  "Cape May Warbler")
+speciestemp2 = c("Tree Swallow")
 
 allspecies.eng = dat_strat$species_strat$english
 allspecies.fre = dat_strat$species_strat$french
@@ -65,13 +61,18 @@ allspecies.num = dat_strat$species_strat$sp.bbs
 allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",replacement = ""),
                                   "\\s",replacement = "_")
 
-
+speciestemp2 = c("Ferruginous Hawk",
+                 "Band-tailed Pigeon",
+                 "Lesser Yellowlegs",
+                 "Great Blue Heron",
+                 "Short-eared Owl",
+                 "Golden-winged Warbler")
 COSEWIC = T
 if(COSEWIC){
 rollTrend = "Trend"
 }
 
-GEN_time = F
+GEN_time = T
 if(GEN_time){
 gen_time_3 = data.frame(species.eng = speciestemp2,
                         gen_time = c(21,13,12,22,12,10))
@@ -139,6 +140,8 @@ in_file <- paste0("f:/BBS_Summaries/output/")
 
 mx_back = 5 # set maximum extrapolation of estimates in regions with no data
 
+short_start = 1995 #start year for the short-term trend annual indices, may be moved back but will affect the included strata depending on the value of mx_back
+
 for(ssi in which(allspecies.eng %in% speciestemp2)){
  
   ss = allspecies.eng[ssi]
@@ -164,8 +167,15 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
   
   # Loop for short and long-term trends and indices -------------------------
   
-  for(fy in c(1970,YYYY-short_time)){
-    if(fy == 1970){trend_time = "Long-term"}else{trend_time = "Short-term"}
+  for(fy in c(1970,1980,YYYY-short_time)){
+    if(fy == 1970){trend_time = "Long-term"
+    }else{
+    if(fy == YYYY-short_time){
+      trend_time = "Short-term"
+      }else{
+      trend_time = "Alternate"
+    }
+      }
     plot_header = paste(ss,trend_time,sep = "_")
     
     ### indices to visualise the trajectories (with year-effects)
@@ -175,14 +185,14 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
                                    regions = c("continental","national", "prov_state","bcr","stratum","bcr_by_country"),
                                    #max_backcast = 5,
                                    max_backcast = mx_back,
-                                   startyear = min(1995,fy))
+                                   startyear = min(short_start,fy))
  
     ### indices to calculate trends (without year-effects)
   inds_tr = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
                                    regions = c("continental","national", "prov_state","bcr","stratum","bcr_by_country"),
-                                   startyear = min(1995,fy),
+                                   startyear = min(short_start,fy),
                                    max_backcast = mx_back,
                                    #max_backcast = 5,
                                    alternate_n = "n3")
@@ -212,12 +222,14 @@ for(ssi in which(allspecies.eng %in% speciestemp2)){
 
     inds_trout = rbind(inds_trout,inds_trt)
     rm("inds_trt")
-    
+    if(fy == YYYY-short_time){
     write.csv(inds_visout,paste0("output/trends_indices/",paste(ss.file,sep = "_")," annual indices.csv"),row.names = F)
   
     
     write.csv(inds_trout,paste0("output/alternate_trends_indices/",paste(ss.file,sep = "_"),"smooth annual indices.csv"),row.names = F)
+    }
   }
+    
   
   
   rm("trs_web")
@@ -417,7 +429,7 @@ if(fy == 1970){
   
 
   ipp = plot_strata_indices(indices_list = inds_vis,
-                            min_year = min(1995,fy),
+                            min_year = min(short_start,fy),
                             add_observed_means = F,
                             species = ss)
   
@@ -535,7 +547,7 @@ if(fy == 1970){
 if(COSEWIC){
  
   
-  fy2 = min(1995,fy)
+  fy2 = min(short_start,fy)
   indscos = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
