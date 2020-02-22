@@ -203,7 +203,7 @@ allsum <- foreach(ssi = 1:nspecies,
       trend_time = "Alternate"
     }
       }
-    plot_header = paste(ss,trend_time,sep = "_")
+    plot_header = paste(ss.file,trend_time,sep = "_")
     
     ### indices to visualise the trajectories (with year-effects)
   inds_vis = generate_regional_indices(jags_mod = jags_mod,
@@ -285,6 +285,7 @@ allsum <- foreach(ssi = 1:nspecies,
   stratlist = stratlist[order(stratlist$strat),]
   stratnames = stratlist$strat_name
 
+  if(length(stratnames) > 2){
   sdbeta.mat = jags_mod$sims.list[["sdbeta"]]
   BXmat = jags_mod$sims.list[["B.X"]]
   beta.x.mat = jags_mod$sims.list[["beta.X"]]
@@ -315,6 +316,13 @@ allsum <- foreach(ssi = 1:nspecies,
   }else{
     pool_by_strat = rowMeans(pool[,-c(1:10)]) #summarizing the pooling for the outer knots
   }
+  
+  }else{
+    pool_by_strat <- rep(NA,nrow(trs_web))
+    
+  }
+  
+
   
   for(j in 1:nrow(trs_web)){
     ww = which(stratlist$strat_name %in% unlist(str_split(trs_web[j,"Strata_included"],pattern = " ; ")))
@@ -535,7 +543,7 @@ if(fy == 1970){
     ttmax = ttind[which(ttind$Year == YYYY),]
     ttmax$lbl = paste(ttmax$nrts,"routes in",YYYY,ttmax$nrts_total,"total")
     
-    ttmin = ttind[which(ttind$Year == fy),]
+    ttmin = ttind[which(ttind$Year == min(ttind$Year)),]
     ttmin$lbl = "Observed means"
     
     np <- ttp + 
@@ -574,7 +582,7 @@ if(fy == 1970){
 if(COSEWIC){
  
   
-  fy2 = min(short_start,fy)
+  fy2 = max(c(min(short_start,fy),min(jags_data$r_year)))
   indscos = generate_regional_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
