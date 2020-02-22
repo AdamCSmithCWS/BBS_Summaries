@@ -9,11 +9,9 @@ generate_web_maps <- function(df,
       df[j,"mapfile"] <- mapname
       
       sts = unlist(strsplit(df[j,"Strata_included"],split = " ; "))
-      stx = unlist(strsplit(df[j,"Strata_excluded"],split = " ; "))
-      
+     
       mapo = map_f(st = dfstrata,
                    stinc = sts,
-                   stex = stx,
                    map = canmap)
       png(filename = paste0("WebMaps/",mapname),
           bg = "white",width = 480, height = 320)
@@ -34,17 +32,11 @@ generate_web_maps <- function(df,
 map_f <- function(st, #dataframe of trends
                   map = canmap,
                   slope = F,
-                  stinc = sts,
-                  stex = stx){
+                  stinc = sts){
   
   
   stplot = st[which(st$Region %in% c(stinc)),]
-  if(length(stex) > 0){
-    nr2 = (length(stplot)+1)
-    nr3 = nr2 + (length(stex)-1)
-    stplot[c(nr2:nr3),"Region"] <- stex
-    stplot[which(stplot$Region %in% stex),"Trend"] <- 99999
-  }
+
   breaks <- c(-7, -4, -2, -1, -0.5, 0.5, 1, 2, 4, 7,10000)
   labls = c(paste0("< ",breaks[1]),paste0(breaks[-c(length(breaks)-1,length(breaks))],":", breaks[-c(1,length(breaks))]),paste0("> ",breaks[length(breaks)-1]))
   labls = paste0(labls, " %")
