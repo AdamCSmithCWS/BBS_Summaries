@@ -3,10 +3,10 @@
 ##########################
 library(pacman)
 
+pkgs = c("bbsBayes","ggplot2","ggrepel","RColorBrewer","tidyverse",
+         "doParallel","foreach","dplyr")
 
-p_load(char = c("bbsBayes","ggplot2","ggrepel","RColorBrewer","tidyverse",
-                "doParallel","foreach","dplyr"),character.only = T)
-
+p_load(char = pkgs,character.only = T)
 
 sapply(list.files(pattern="[.]R$", path="functions/", full.names=TRUE), source);
 
@@ -147,9 +147,8 @@ if(external_drive){
 
 
 mx_back = 5 # set maximum extrapolation of estimates in regions with no data
-
+exclude_backcast = FALSE # set to TRUE to exclude strata flagged in mx_back, if TRUE strata are flagged
 short_start = 1995 #start year for the short-term trend annual indices, may be moved back but will affect the included strata depending on the value of mx_back
-
 
 
 # parallel setup ----------------------------------------------------------
@@ -165,7 +164,7 @@ nspecies <- length(allspecies.eng)
 
 
 allsum <- foreach(ssi = 1:nspecies,
-                  .packages = "bbsBayes",
+                  .packages = pkgs,
                   .inorder = FALSE,
                   .errorhandling = "pass") %dopar% {
 
@@ -522,7 +521,7 @@ if(fy == 1970){
     trtmp2 = trs_alt[which(trs_alt$Region_alt == treg),]
     
     st_exc = unique(trtmp$Strata_excluded)
-    if(st_exc != ""){
+    if(st_exc != "" & exclude_backcast){
       stx2 = unlist(strsplit(st_exc,split = " ; "))
       
       if(length(stx2) > 2){
@@ -530,6 +529,8 @@ if(fy == 1970){
       }else{
         st_exc <- paste("Excluding",st_exc)
       }
+    }else{
+      st_exc = ""
     }
     
     
@@ -629,14 +630,18 @@ if(COSEWIC){
     
     tmp = tcos[which(tcos$Region_alt == rg),]
     
-    st_exc = unique(tmp$Strata_excluded)
-    if(st_exc != ""){
-      if(nchar(st_exc) > 20){
-        stx2 = unlist(strsplit(st_exc,split = " ; "))
+    st_exc = unique(trtmp$Strata_excluded)
+    if(st_exc != "" & exclude_backcast){
+      stx2 = unlist(strsplit(st_exc,split = " ; "))
+      
+      if(length(stx2) > 2){
         st_exc <- paste("Excluding",length(stx2),"strata")
       }else{
-      st_exc <- paste("Excluding",st_exc)
-    }}
+        st_exc <- paste("Excluding",st_exc)
+      }
+    }else{
+      st_exc = ""
+    }
     
     
     tmpend4 = tmp[nrow(tmp)-4,]
