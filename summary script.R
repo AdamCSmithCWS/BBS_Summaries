@@ -108,6 +108,8 @@ names(cov_cuts) <- c("High","Medium")
 pool_cuts = c(0.33,0.1)
 names(pool_cuts) <- c("High","Medium")
 
+backcast_cuts = c(0.10,0.25)
+names(backcast_cuts) <- c("High","Medium")
 
 
 # load the maps for CWS webmaps ---------------------------------------
@@ -226,11 +228,29 @@ allsum <- foreach(ssi = 1:nspecies,
   inds_vist = inds_vis$data_summary
   inds_vist$Trend_Time = trend_time
   
-
-  
   inds_trt = inds_tr$data_summary
   inds_trt$Trend_Time = trend_time
   
+  inds_vist$For_Web <- for_web_func(inds_vist)
+  inds_trt$For_Web <- for_web_func(inds_trt)
+
+  
+
+  # Write the species index files -------------------------------------------
+  
+  
+  # append species names ----------------------------------------------------
+  
+  inds_vist$species = ss
+  inds_vist$espece = ss.f
+  inds_vist$bbs_num = ss.n
+  
+  inds_trt$species = ss
+  inds_trt$espece = ss.f
+  inds_trt$bbs_num = ss.n
+  
+  
+ 
   if(fy == 1970){
 
     inds_visout = inds_vist
@@ -336,7 +356,7 @@ allsum <- foreach(ssi = 1:nspecies,
   trs_web$Trend_Time = trend_time
   #trst$reliab.prec = trst$Trend_Q0.975-trst$Trend_Q0.025
   
-  trs_alt = trs_alt
+  
   trs_alt$Trend_Time = trend_time
   #trst2$reliab.prec = trst2$Trend_Q0.975-trst2$Trend_Q0.025
   
@@ -366,18 +386,20 @@ allsum <- foreach(ssi = 1:nspecies,
   trs_web$precision = reliab_func_prec(trs_web$Width_of_95_percent_Credible_Interval)
   trs_web$coverage = reliab_func_cov(trs_web$reliab.cov)
   trs_web$local_data = reliab_func_pool(trs_web$pool)
+  trs_web$backcast_reliab = reliab_func_backcast(trs_web$backcast_flag)
   
   trs_alt$precision = reliab_func_prec(trs_alt$Width_of_95_percent_Credible_Interval)
   trs_alt$coverage = reliab_func_cov(trs_alt$reliab.cov)
   trs_alt$local_data = reliab_func_pool(trs_alt$pool)
+  trs_alt$backcast_reliab = reliab_func_backcast(trs_alt$backcast_flag)
   
   trs_web$Reliability = factor(rep("Low",nrow(trs_web)),levels = c("Low","Medium","High"),ordered = T)
   for(j in 1:nrow(trs_web)){
-  trs_web[j,"Reliability"] = levels(trs_web$Reliability)[min(as.integer(trs_web[j,c("precision","coverage","local_data")]),na.rm = T)]
+  trs_web[j,"Reliability"] = levels(trs_web$Reliability)[min(as.integer(trs_web[j,c("precision","coverage","backcast_reliab")]),na.rm = T)]
   }
   trs_alt$Reliability = factor(rep("Low",nrow(trs_alt)),levels = c("Low","Medium","High"),ordered = T)
   for(j in 1:nrow(trs_alt)){
-    trs_alt[j,"Reliability"] = levels(trs_alt$Reliability)[min(as.integer(trs_alt[j,c("precision","coverage","local_data")]),na.rm = T)]
+    trs_alt[j,"Reliability"] = levels(trs_alt$Reliability)[min(as.integer(trs_alt[j,c("precision","coverage","backcast_reliab")]),na.rm = T)]
   }
 # Identify trends to publish on CWS website -------------------------------
 
