@@ -4,16 +4,16 @@
 library(tidyverse)
 library(bbsBayes)
 
-# dat_strat = stratify(by = "bbs_cws")
-# 
-# 
-# 
-# allspecies.eng = dat_strat$species_strat$english
-# allspecies.fre = dat_strat$species_strat$french
-# allspecies.num = dat_strat$species_strat$sp.bbs
-# 
-# allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",replacement = ""),
-#                                   "\\s",replacement = "_")
+dat_strat = stratify(by = "bbs_cws")
+
+
+
+allspecies.eng = dat_strat$species_strat$english
+allspecies.fre = dat_strat$species_strat$french
+allspecies.num = dat_strat$species_strat$sp.bbs
+
+allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",replacement = ""),
+                                  "\\s",replacement = "_")
 
 
 
@@ -69,9 +69,23 @@ splist = read.csv("C:/Estimating_Change_in_NorthAmerican_Birds/Rosenberg et al s
 
 spai = splist[which(splist$AI == "AI"),"species"]
 
-indai = alli[which(alli$species %in% spai),]
+indai = NULL
+for(ssp in which(allspecies.eng %in% spai)){
+  sp.e = allspecies.eng[ssp]
+  sp.f = allspecies.fre[ssp]
+  sp.n = allspecies.num[ssp]
+  spf = allspecies.file[ssp]
+  
 
-sprapt = c("Merlin","")
-
+  tmp = read.csv(paste0(in_file,spf," annual indices.csv"),stringsAsFactors = F)
+  tmp$species = sp.e
+  tmp$espece = sp.f
+  tmp$bbs_num = sp.n
+  
+  
+  indai = bind_rows(indai,tmp)
+  
+}
+write.csv(indai,"AI annual indices BBS 2018.csv",row.names = F)
 
 
