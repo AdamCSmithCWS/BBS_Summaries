@@ -64,6 +64,11 @@ write.csv(alli, paste0(in_file,"All 2018 BBS indices.csv"),row.names = F)
 
 # exporting hte aerial insectivore, and raptor annual indices for the AI meeting.
 
+
+
+# Exporting the AI indices ------------------------------------------------
+
+
 splist = read.csv("C:/Estimating_Change_in_NorthAmerican_Birds/Rosenberg et al species list.csv")
 
 
@@ -87,5 +92,72 @@ for(ssp in which(allspecies.eng %in% spai)){
   
 }
 write.csv(indai,"AI annual indices BBS 2018.csv",row.names = F)
+
+in_file_alt <- paste0("f:/BBS_Summaries/estimates/alternate_trends_indices/")
+indai_sm = NULL
+for(ssp in which(allspecies.eng %in% spai)){
+  sp.e = allspecies.eng[ssp]
+  sp.f = allspecies.fre[ssp]
+  sp.n = allspecies.num[ssp]
+  spf = allspecies.file[ssp]
+  
+  
+  tmp = read.csv(paste0(in_file_alt,spf,"smooth annual indices.csv"),stringsAsFactors = F)
+  tmp$species = sp.e
+  tmp$espece = sp.f
+  tmp$bbs_num = sp.n
+  
+  
+  indai_sm = bind_rows(indai_sm,tmp)
+  
+}
+write.csv(indai_sm,"AI annual indices SmoothOnly BBS 2018.csv",row.names = F)
+
+
+
+
+# extract and export raptors ---------------------------------------------------------
+
+
+spraptor = c("Merlin","American Kestrel","Cooper's Hawk","Sharp-shinned Hawk","Peregrine Falcon")
+
+indraptor = NULL
+for(ssp in which(allspecies.eng %in% spraptor)){
+  sp.e = allspecies.eng[ssp]
+  sp.f = allspecies.fre[ssp]
+  sp.n = allspecies.num[ssp]
+  spf = allspecies.file[ssp]
+  
+  
+  tmp = read.csv(paste0(in_file,spf," annual indices.csv"),stringsAsFactors = F)
+  tmp$species = sp.e
+  tmp$espece = sp.f
+  tmp$bbs_num = sp.n
+  
+  
+  indraptor = bind_rows(indraptor,tmp)
+  
+}
+write.csv(indraptor,"raptor annual indices BBS 2018.csv",row.names = F)
+
+in_file_alt <- paste0("f:/BBS_Summaries/estimates/alternate_trends_indices/")
+indraptor_sm = NULL
+for(ssp in which(allspecies.eng %in% spraptor)){
+  sp.e = allspecies.eng[ssp]
+  sp.f = allspecies.fre[ssp]
+  sp.n = allspecies.num[ssp]
+  spf = allspecies.file[ssp]
+  
+  
+  tmp = read.csv(paste0(in_file_alt,spf,"smooth annual indices.csv"),stringsAsFactors = F)
+  tmp$species = sp.e
+  tmp$espece = sp.f
+  tmp$bbs_num = sp.n
+  
+  
+  indraptor_sm = bind_rows(indraptor_sm,tmp)
+  
+}
+write.csv(indraptor_sm,"raptor annual indices SmoothOnly BBS 2018.csv",row.names = F)
 
 
