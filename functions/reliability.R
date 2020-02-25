@@ -26,22 +26,22 @@ reliab_func_pool <- function(x){
   return(y)
 }
 
+reliab_func_backcast <- function(x){
+  y = rep(NA,length(x))
+  y[which(x < backcast_cuts["Medium"])] <- "Low"
+  y[which(x >= backcast_cuts["Medium"])] <- "Medium"
+  y[which(x > backcast_cuts["High"])] <- "High"
+  y = factor(y,levels = c("Low","Medium","High"),ordered = T)
+
+  return(y)
+}
+
 # reliab_func_backcast <- function(x){
-#   y = rep(NA,length(x))
-#   y[which(x < backcast_cuts["Medium"])] <- "Low"
-#   y[which(x >= backcast_cuts["Medium"])] <- "Medium"
-#   y[which(x > backcast_cuts["High"])] <- "High"
+#   y = rep("Low",length(x))
+#   y[which(x <= backcast_cuts["Medium"])] <- "Medium"
+#   y[which(x < backcast_cuts["High"])] <- "High"
 #   y = factor(y,levels = c("Low","Medium","High"),ordered = T)
 #   
 #   return(y)
 # }
-
-reliab_func_backcast <- function(x){
-  y = rep("Low",length(x))
-  y[which(x <= backcast_cuts["Medium"])] <- "Medium"
-  y[which(x < backcast_cuts["High"])] <- "High"
-  y = factor(y,levels = c("Low","Medium","High"),ordered = T)
-  
-  return(y)
-}
 

@@ -62,12 +62,12 @@ allspecies.num = dat_strat$species_strat$sp.bbs
 allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",replacement = ""),
                                   "\\s",replacement = "_")
 
-speciestemp2 = c("Ferruginous Hawk",
-                 "Band-tailed Pigeon",
-                 "Lesser Yellowlegs",
-                 "Great Blue Heron",
-                 "Short-eared Owl",
-                 "Golden-winged Warbler")
+# speciestemp2 = c("Ferruginous Hawk",
+#                  "Band-tailed Pigeon",
+#                  "Lesser Yellowlegs",
+#                  "Great Blue Heron",
+#                  "Short-eared Owl",
+#                  "Golden-winged Warbler")
 COSEWIC = T
 if(COSEWIC){
 rollTrend = "Trend"
@@ -108,7 +108,7 @@ names(cov_cuts) <- c("High","Medium")
 pool_cuts = c(0.33,0.1)
 names(pool_cuts) <- c("High","Medium")
 
-backcast_cuts = c(0.10,0.25)
+backcast_cuts = c(0.90,0.75)
 names(backcast_cuts) <- c("High","Medium")
 
 
@@ -383,6 +383,10 @@ allsum <- foreach(ssi = 1:nspecies,
 
 # insert reliability categories---------------------------------------------------
 
+  
+  trs_web$backcast_flag = 1-trs_web$backcast_flag
+  trs_alt$backcast_flag = 1-trs_alt$backcast_flag
+  
   trs_web$precision = reliab_func_prec(trs_web$Width_of_95_percent_Credible_Interval)
   trs_web$coverage = reliab_func_cov(trs_web$reliab.cov)
   trs_web$local_data = reliab_func_pool(trs_web$pool)
