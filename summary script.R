@@ -148,19 +148,21 @@ if(external_drive){
 
 
 mx_back = 5 # set maximum extrapolation of estimates in regions with no data
-exclude_backcast = FALSE # set to TRUE to exclude strata flagged in mx_back, if TRUE strata are flagged
+exclude_backcast = FALSE # set to TRUE to exclude strata flagged in mx_back, if FALSE, strata are just flagged
 short_start = 1995 #start year for the short-term trend annual indices, may be moved back but will affect the included strata depending on the value of mx_back
 
 
 # parallel setup ----------------------------------------------------------
+### temporary re-run for split species complexes
 
+# splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatcher")
+
+####
 n_cores <- 25
 cluster <- makeCluster(n_cores,type = "PSOCK")
 registerDoParallel(cluster)
 
 nspecies <- length(allspecies.eng)
-
-
 
 
 
@@ -190,19 +192,23 @@ allsum <- foreach(ssi = 1:nspecies,
   strat = jags_mod$stratify_by
   
 
-  
-  
+
   # Loop for short and long-term trends and indices -------------------------
   
-  for(fy in c(1970,YYYY-short_time)){
-    if(fy == 1970){trend_time = "Long-term"
-    }else{
-    if(fy == YYYY-short_time){
-      trend_time = "Short-term"
-      }else{
-      trend_time = "Alternate"
-    }
+  for(trend_time in c("Long-term","Short-term")){
+    if(trend_time == "Long-term"){ 
+      fy <- 1970 
+      if(ss %in% c("Alder Flycatcher","Willow Flycatcher")){
+        fy <- 1974 
       }
+      if(ss %in% c("Clark's Grebe","Western Grebe")){
+        fy <- 1986 
+      }
+    }else{
+      fy <- YYYY-short_time
+    }
+
+ 
     plot_header = paste(ss.file,trend_time,sep = "_")
     
     ### indices to visualise the trajectories (with year-effects)
@@ -250,7 +256,7 @@ allsum <- foreach(ssi = 1:nspecies,
   
   
  
-  if(fy == 1970){
+  if(trend_time == "Long-term"){
 
     inds_visout = inds_vist
     rm("inds_vist")
@@ -435,7 +441,7 @@ trs_web = generate_web_maps(trs_web)
   trs_alt$bbs_num = ss.n
   
 
-if(fy == 1970){
+if(trend_time == "Long-term"){
   trstout = trs_web
   #rm("trs_web")
   
