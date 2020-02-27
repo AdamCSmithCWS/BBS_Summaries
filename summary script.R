@@ -365,6 +365,10 @@ allsum <- foreach(ssi = 1:nspecies,
 
   covsp = covs[which(covs$sp == ss.n & covs$trendtype == tolower(trend_time)),]
   covsp = unique(covsp[,c("new.area","reliab.cov")])
+  if(any(duplicated(covsp$new.area))){
+    dd = which(duplicated(covsp$new.area))
+    covsp = covsp[-dd,]
+  }
   trs_web = merge(trs_web,
              covsp,
              by.x = "Region_alt",
