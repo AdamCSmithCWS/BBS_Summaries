@@ -383,10 +383,7 @@ allsum <- foreach(ssi = 1:nspecies,
 
 # insert reliability categories---------------------------------------------------
 
-  
-  trs_web$backcast_flag = 1-trs_web$backcast_flag
-  trs_alt$backcast_flag = 1-trs_alt$backcast_flag
-  
+
   trs_web$precision = reliab_func_prec(trs_web$Width_of_95_percent_Credible_Interval)
   trs_web$coverage = reliab_func_cov(trs_web$reliab.cov)
   trs_web$local_data = reliab_func_pool(trs_web$pool)
