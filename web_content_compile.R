@@ -20,9 +20,10 @@ allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",rep
 external_drive <- TRUE
 if(external_drive){
   in_file <- paste0("f:/BBS_Summaries/estimates/trends_indices/")
-}else{
+  mpdrive <- paste0("f:/BBS_Summaries/WebMaps/")
+  }else{
   in_file <- paste0("estimates/trends_indices/")
-  
+  mpdrive <- paste0("WebMaps/")
 }
 
 tfiles = list.files(pattern="trends[.]csv$", path=in_file, full.names=TRUE)
@@ -36,7 +37,71 @@ for(ff in tfiles){
   
 }
 
-write.csv(all, paste0(in_file,"All 2018 BBS trends.csv"),row.names = F)
+i = 1
+mp <- T
+while(mp == T){
+  mp <- file.exists(paste0(mpdrive,web[i,"mapfile"]))
+  i = i+1
+}
+
+write.csv(all, paste0("All 2018 BBS trends.csv"),row.names = F)
+
+web <- filter(all,For_Web == TRUE)
+
+web$prob_decrease_0_25_percent = web$prob_decrease_0_percent - web$prob_decrease_25_percent 
+web$prob_decrease_25_50_percent = web$prob_decrease_0_percent - (web$prob_decrease_0_25_percent + web$prob_decrease_50_percent) 
+ # (web$prob_decrease_0_percent != (web$prob_decrease_0_25_percent + web$prob_decrease_25_50_percent + web$prob_decrease_50_percent ))
+
+web$prob_increase_0_33_percent = web$prob_increase_0_percent - web$prob_increase_33_percent 
+web$prob_increase_33_100_percent = web$prob_increase_0_percent - (web$prob_increase_0_33_percent + web$prob_increase_100_percent) 
+
+clout = c("bbs_num",
+          "species",
+          "espece",
+          "Region_alt",
+          "Trend_Time",
+          "Start_year",
+          "End_year",
+          "Trend",
+          "Trend_Q0.025",
+          "Trend_Q0.975",
+          "Reliability",
+          "Width_of_95_percent_Credible_Interval",
+          "reliab.cov",
+          "backcast_flag",
+          "prob_decrease_0_percent",
+          "prob_increase_0_percent",
+          "prob_decrease_50_percent",
+          "prob_decrease_25_50_percent",
+          "prob_decrease_0_25_percent",
+          "prob_increase_0_33_percent",
+          "prob_increase_33_100_percent",
+          "prob_increase_100_percent",
+          "Percent_Change",
+          "Percent_Change_Q0.025",
+          "Percent_Change_Q0.975",
+          "Number_of_Routes",
+          "Strata_included",
+          "Strata_excluded")
+
+clnms = c("sp","species","espece","geo.area","trendtype",
+          "startyear","endyear","trend",
+          "llimit","ulimit","reliab.over",
+          "reliab.prec","reliab.cov","reliab.pool",
+          "p.decrease","p.increase","p.d50","pd50.25",
+          "pd25.0","pi0.33","pi33.100","pi100",
+          "percent.change","percent.change.llimit",
+          "percent.change.ulimit","nroutesduringtrend",
+          "strata.inc","st.excl.long")
+
+web = web[,clout]
+names(web) = clnms
+
+
+
+
+write.csv(web, paste0("2018 BBS trends for website.csv"),row.names = F)
+
 
 
 ifiles = list.files(pattern="indices[.]csv$", path=in_file, full.names=TRUE)
@@ -53,7 +118,26 @@ for(ff in ifiles){
 
 write.csv(alli, paste0(in_file,"All 2018 BBS indices.csv"),row.names = F)
 
+webi <- filter(alli,For_Web == TRUE)
 
+clouti =  c("bbs_num",
+                   "species",
+                   "espece",
+                   "Region_alt",
+                   "Trend_Time",
+                   "Year",
+                   "Index",
+                   "Index_q_0.025",
+                   "Index_q_0.975")
+clnmsi = c("sp","species","espece","geo.area","trendtype",
+           "year","an.index",
+           "llimit","ulimit")
+
+webi = webi[,clouti]
+names(webi) <- clnmsi
+
+
+write.csv(webi, paste0("2018 BBS indices for website.csv"),row.names = F)
 
 
 

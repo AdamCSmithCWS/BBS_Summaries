@@ -87,8 +87,7 @@ short_time = 10 #length of time for short-term trend
 lastyear = read.csv("2017estimates/All BBS trends 2017 w reliab.csv",stringsAsFactors = F)
 covs = lastyear[,c("sp","species","geo.area","trendtype","trendtime","startyear","reliab.cov")]
 
-covs <- covs[which((covs$trendtime == "full") |
-                     (covs$trendtype == "short-term" & covs$trendtime == "reduc")),]
+covs <- covs[which((covs$trendtime == "full")),]
 
 oldregs = read.csv("old region names.csv",stringsAsFactors = F)
 
@@ -365,14 +364,15 @@ allsum <- foreach(ssi = 1:nspecies,
 # insert last year's coverage estimates -----------------------------------
 
   covsp = covs[which(covs$sp == ss.n & covs$trendtype == tolower(trend_time)),]
+  covsp = unique(covsp[,c("new.area","reliab.cov")])
   trs_web = merge(trs_web,
-             covsp[,c("new.area","reliab.cov")],
+             covsp,
              by.x = "Region_alt",
              by.y = "new.area",
              all.x = T,sort = F)  
 
   trs_alt = merge(trs_alt,
-             covsp[,c("new.area","reliab.cov")],
+             covsp,
              by.x = "Region_alt",
              by.y = "new.area",
              all.x = T,sort = F)

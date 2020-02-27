@@ -4,6 +4,11 @@
 
 # Session Data files
 *.RData
+2018 BBS indices for website.csv
+2018 BBS trends for website.csv
+All 2018 BBS trends.csv
+All 2018 BBS indices.csv
+
 
 # output folder
 *model_results/
