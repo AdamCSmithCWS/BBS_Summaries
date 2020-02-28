@@ -37,16 +37,21 @@ for(ff in tfiles){
   
 }
 
+
+write.csv(all, paste0("All 2018 BBS trends.csv"),row.names = F)
+
+web <- filter(all,For_Web == TRUE)
+
 i = 1
 mp <- T
 while(mp == T){
   mp <- file.exists(paste0(mpdrive,web[i,"mapfile"]))
   i = i+1
 }
+if(i < nrow(web)){
+  paste("Warning, there are maps missing")
+}
 
-write.csv(all, paste0("All 2018 BBS trends.csv"),row.names = F)
-
-web <- filter(all,For_Web == TRUE)
 
 web$prob_decrease_0_25_percent = web$prob_decrease_0_percent - web$prob_decrease_25_percent 
 web$prob_decrease_25_50_percent = web$prob_decrease_0_percent - (web$prob_decrease_0_25_percent + web$prob_decrease_50_percent) 
@@ -116,7 +121,7 @@ for(ff in ifiles){
 }
 
 
-write.csv(alli, paste0(in_file,"All 2018 BBS indices.csv"),row.names = F)
+write.csv(alli, paste0("All 2018 BBS indices.csv"),row.names = F)
 
 webi <- filter(alli,For_Web == TRUE)
 
