@@ -614,7 +614,7 @@ if(trend_time == "Long-term"){
 
 
 # COSEWIC output ----------------------------------------------------------
-if(COSEWIC){
+if(COSEWIC & trend_time == "Long-term"){
  
   
   fy2 = max(c(min(short_start,fy),min(jags_data$r_year)))
