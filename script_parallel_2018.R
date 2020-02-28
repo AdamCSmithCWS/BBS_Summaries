@@ -74,6 +74,11 @@ if(file.exists(paste0(sp.dir, "/jags_mod_full.RData")) == F){
   }
 }
 
+splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatcher")
+to_rerun <- which(allspecies.eng %in% splitters)
+
+sp.rerun <- to_rerun
+
 fullrun <- foreach(i = sp.rerun,
         .packages = 'bbsBayes',
         .inorder = FALSE,
@@ -86,7 +91,7 @@ fullrun <- foreach(i = sp.rerun,
     
   sp.dir = paste0("output/", species)
   
-  if(file.exists(paste0(sp.dir, "/jags_mod_full.RData")) == F){
+  #if(file.exists(paste0(sp.dir, "/jags_mod_full.RData")) == F){
     
   dir.create(sp.dir, showWarnings = F)
   
@@ -119,15 +124,15 @@ fullrun <- foreach(i = sp.rerun,
      
      rm(list = c("jags_mod","jags_data"))
 
-  }
   }#end if nrecs > 100
+  #}# end if results don't yet exist
   
     }#end of full model parallel loop
     
 stopCluster(cl = cluster)
 
 
-#save(list = c("sp.rerun"),file = "sp.rerun.RData")
+ #save(list = c("sp.rerun"),file = "sp.rerun.RData")
 
 
 

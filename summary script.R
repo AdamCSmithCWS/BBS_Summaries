@@ -155,7 +155,8 @@ short_start = 1995 #start year for the short-term trend annual indices, may be m
 # parallel setup ----------------------------------------------------------
 ### temporary re-run for split species complexes
 
-# splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatcher")
+ splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatcher")
+to_rerun <- which(allspecies.eng %in% splitters)
 
 ####
 n_cores <- 25
@@ -166,7 +167,7 @@ nspecies <- length(allspecies.eng)
 
 
 
-allsum <- foreach(ssi = 1:nspecies,
+allsum <- foreach(ssi = to_rerun,#1:nspecies,
                   .packages = pkgs,
                   .inorder = FALSE,
                   .errorhandling = "pass") %dopar% {
@@ -199,10 +200,10 @@ allsum <- foreach(ssi = 1:nspecies,
     if(trend_time == "Long-term"){ 
       fy <- 1970 
       if(ss %in% c("Alder Flycatcher","Willow Flycatcher")){
-        fy <- 1974 
+        fy <- 1978 #5 years after the split 
       }
       if(ss %in% c("Clark's Grebe","Western Grebe")){
-        fy <- 1986 
+        fy <- 1990 #5 years after the split
       }
     }else{
       fy <- YYYY-short_time
