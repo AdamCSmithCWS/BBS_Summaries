@@ -75,6 +75,9 @@ if(file.exists(paste0(sp.dir, "/jags_mod_full.RData")) == F){
 }
 
 splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatcher")
+split_miny = c(1990,1990,1978,1978)
+names(split_miny) <- splitters
+
 to_rerun <- which(allspecies.eng %in% splitters)
 
 sp.rerun <- to_rerun
@@ -88,7 +91,12 @@ fullrun <- foreach(i = sp.rerun,
     species = allspecies.file[i]
     species.eng = allspecies.eng[i]
     species.num = allspecies.num[i]
+     
+    miny = NULL
     
+    if(species.eng %in% splitters){
+      miny <- split_miny[species.eng] 
+     }
   sp.dir = paste0("output/", species)
   
   #if(file.exists(paste0(sp.dir, "/jags_mod_full.RData")) == F){
@@ -103,6 +111,7 @@ fullrun <- foreach(i = sp.rerun,
   jags_data <- prepare_jags_data(strat_data = stratified_data,
                                  species_to_run = species.eng,
                                  min_max_route_years = 5,
+                                 min_year = miny,
                                  model = model,
                                  heavy_tailed = T)
   
