@@ -42,12 +42,6 @@ allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",rep
 ###################################################
 
 
-# Set up parallel stuff
-n_cores <- 15
-cluster <- makeCluster(n_cores, type = "PSOCK")
-registerDoParallel(cluster)
-
-
 model = "gamye"
 nspecies = length(allspecies.eng)
 
@@ -81,6 +75,15 @@ names(split_miny) <- splitters
 to_rerun <- which(allspecies.eng %in% splitters)
 
 sp.rerun <- to_rerun
+
+
+
+# Set up parallel stuff
+n_cores <- 15
+cluster <- makeCluster(n_cores, type = "PSOCK")
+registerDoParallel(cluster)
+
+
 
 fullrun <- foreach(i = sp.rerun,
         .packages = 'bbsBayes',

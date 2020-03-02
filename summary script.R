@@ -159,7 +159,7 @@ short_start = 1995 #start year for the short-term trend annual indices, may be m
 to_rerun <- which(allspecies.eng %in% splitters)
 
 ####
-n_cores <- 25
+n_cores <- 30
 cluster <- makeCluster(n_cores,type = "PSOCK")
 registerDoParallel(cluster)
 
@@ -167,7 +167,7 @@ nspecies <- length(allspecies.eng)
 
 
 
-allsum <- foreach(ssi = to_rerun,#1:nspecies,
+allsum <- foreach(ssi = 1:nspecies,
                   .packages = pkgs,
                   .inorder = FALSE,
                   .errorhandling = "pass") %dopar% {
