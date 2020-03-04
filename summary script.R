@@ -202,7 +202,7 @@ allsum <- foreach(ssi = 1:nspecies,
       if(ss %in% c("Alder Flycatcher","Willow Flycatcher")){
         fy <- 1978 #5 years after the split 
       }
-      if(ss %in% c("Clark's Grebe","Western Grebe")){
+      if(ss %in% c("Clark's Grebe","Western Grebe","Eurasian Collared-Dove")){
         fy <- 1990 #5 years after the split
       }
     }else{

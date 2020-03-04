@@ -99,7 +99,12 @@ fullrun <- foreach(i = sp.rerun,
     
     if(species.eng %in% splitters){
       miny <- split_miny[species.eng] 
-     }
+    }
+    
+    if(species.eng == "Eurasian Collared-Dove"){
+      miny <- 1990 
+    }
+    
   sp.dir = paste0("output/", species)
   
   #if(file.exists(paste0(sp.dir, "/jags_mod_full.RData")) == F){
