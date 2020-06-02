@@ -15,13 +15,6 @@ https://drive.google.com/open?id=1OTqdql4oGTGqwDNWcEIHtpamrSifvp-f
 
 
 
-### lumping and splitting notes:
-# For some species, the BBS dataset has split species complexes based on geography
-# When the underlying dataset has split the observations, I have followed those
-# splits. So, for these groups, combined estimates are no longer produced
-
-Sapsucker data are not longer combined to produce estimates
-
 
 
 
