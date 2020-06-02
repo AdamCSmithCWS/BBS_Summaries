@@ -4,7 +4,9 @@
 library(pacman)
 
 pkgs = c("bbsBayes","ggplot2","ggrepel","RColorBrewer","tidyverse",
-         "doParallel","foreach","dplyr")
+         "doParallel","foreach","dplyr","gganimate","magick","transformr","gifski")
+
+source("functions/generate-map-abundance.R")
 
 p_load(char = pkgs,character.only = T)
 
@@ -126,6 +128,12 @@ canmap@data$country <- substr(canmap@data$ST_12,1,2)
 canmap <- canmap[canmap$country == "CA",]
 
 
+stratmap <- sf::read_sf(dsn = system.file("maps",
+                                           package = "bbsBayes"),
+                         layer = "BBS_CWS_strata",
+                         quiet = TRUE)
+
+
 basmap = rgdal::readOGR(dsn = system.file("maps",
                                           package = "bbsBayes"),
                         layer = "BBS_USGS_strata",
@@ -153,13 +161,12 @@ short_start = 1995 #start year for the short-term trend annual indices, may be m
 
 
 # parallel setup ----------------------------------------------------------
-### temporary re-run for split species complexes
 
  splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatcher")
-to_rerun <- which(allspecies.eng %in% splitters)
+#to_rerun <- which(allspecies.eng %in% splitters)
 
 ####
-n_cores <- 30
+n_cores <- 40
 cluster <- makeCluster(n_cores,type = "PSOCK")
 registerDoParallel(cluster)
 
@@ -178,6 +185,7 @@ allsum <- foreach(ssi = 1:nspecies,
   ss.f = allspecies.fre[ssi]
   ss.n = allspecies.num[ssi]
   ss.file = allspecies.file[ssi]
+  if(ss == "Eurasian Collared-Dove"){next}
   
   if(GEN_time){
     short_time = gen_time_3[which(gen_time_3$species.eng == ss),"gen_time"]
@@ -213,7 +221,7 @@ allsum <- foreach(ssi = 1:nspecies,
     plot_header = paste(ss.file,trend_time,sep = "_")
     
     ### indices to visualise the trajectories (with year-effects)
-  inds_vis = generate_regional_indices(jags_mod = jags_mod,
+  inds_vis = generate_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
                                    regions = c("continental","national", "prov_state","bcr","stratum","bcr_by_country"),
@@ -222,7 +230,7 @@ allsum <- foreach(ssi = 1:nspecies,
                                    startyear = min(short_start,fy))
  
     ### indices to calculate trends (without year-effects)
-  inds_tr = generate_regional_indices(jags_mod = jags_mod,
+  inds_tr = generate_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
                                    regions = c("continental","national", "prov_state","bcr","stratum","bcr_by_country"),
@@ -286,14 +294,14 @@ allsum <- foreach(ssi = 1:nspecies,
   
   rm("trs_web")
   rm("trs_alt")
-  trs_web = generate_regional_trends(indices = inds_tr,
+  trs_web = generate_trends(indices = inds_tr,
                                  Min_year = fy,
                                  #quantiles = qs,
                                  slope = T,
                                  prob_decrease = c(0,25,30,50),
                                  prob_increase = c(0,33,100))
   
-  trs_alt = generate_regional_trends(indices = inds_vis,
+  trs_alt = generate_trends(indices = inds_vis,
                                  Min_year = fy,
                                  #quantiles = qs,
                                  slope = T,
@@ -336,10 +344,13 @@ allsum <- foreach(ssi = 1:nspecies,
     
   }
   
+  lstc = c((ncol(pool)-2):ncol(pool))
+  fstc = c(1:3)
   if(fy < 1990){
-    pool_by_strat = rowMeans(pool[,-c(4:10)]) #summarizing the pooling for the outer knots
+    pool_by_strat = rowMeans(pool[,c(fstc,lstc)]) #summarizing the pooling for the outer knots
   }else{
-    pool_by_strat = rowMeans(pool[,-c(1:10)]) #summarizing the pooling for the outer knots
+    
+    pool_by_strat = rowMeans(pool[,lstc]) #summarizing the pooling for the last 3 knots
   }
   
   }else{
@@ -460,6 +471,38 @@ if(trend_time == "Long-term"){
 }
 
 
+
+# Abundance maps and animated gifs ----------------------------------------
+
+  if(trend_time == "Long-term"){
+    
+    # mp = generate_map_abundance(abundances = inds_vis,annual = T,select = T,stratify_by = "latlong",species = paste0("BBS ",ss),map = stratmap)
+    # 
+    # panim = animate(mp, nframes = 100, fps = 10, end_pause = 15, rewind = FALSE,height = 800,width = 800)#,renderer = magick_renderer())
+    # 
+    # anim_save(filename = paste0(plot_header,"_animated_YE_abundance_map.gif"),animation = panim,path = "estimates/Abundance_maps")
+    # 
+    
+    mp = generate_map_abundance(abundances = inds_tr,annual = T,select = T,stratify_by = "latlong",species = paste0("BBS ",ss),map = stratmap)
+    
+    panim = animate(mp, nframes = 100, fps = 7, end_pause = 15, rewind = FALSE,height = 800,width = 800)#,renderer = magick_renderer())
+    
+    anim_save(filename = paste0(plot_header,"_animated_abundance_map.gif"),animation = panim,path = "estimates/Abundance_maps")
+  }
+    
+    mp = generate_map_abundance(abundances = trs_alt,annual = F,select = T,stratify_by = "latlong",species = paste0("BBS ",ss),map = stratmap)
+    
+    
+    pdf(paste0("estimates/Abundance_maps/",plot_header,"_abundance_map.pdf"),
+        width = 8.5,
+        height = 6)
+    print(mp)
+    dev.off()
+    
+  
+  
+  
+  
 
 # geofacet plots ----------------------------------------------------------
 
@@ -618,7 +661,7 @@ if(COSEWIC & trend_time == "Long-term"){
  
   
   fy2 = max(c(min(short_start,fy),min(jags_data$r_year)))
-  indscos = generate_regional_indices(jags_mod = jags_mod,
+  indscos = generate_indices(jags_mod = jags_mod,
                                    jags_data = jags_data,
                                    #quantiles = qs,
                                    regions = c("continental","national","prov_state","bcr","stratum"),
@@ -628,7 +671,7 @@ if(COSEWIC & trend_time == "Long-term"){
 
   
   for(ly2 in c((fy2+short_time):YYYY)){
-  trst = generate_regional_trends(indices = indscos,
+  trst = generate_trends(indices = indscos,
                                  Min_year = ly2-short_time,
                                  Max_year = ly2,
                                  #quantiles = qs,
