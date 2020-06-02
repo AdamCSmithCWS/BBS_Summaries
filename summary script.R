@@ -211,7 +211,7 @@ allsum <- foreach(ssi = 1:nspecies,
         fy <- 1978 #5 years after the split 
       }
       if(ss %in% c("Clark's Grebe","Western Grebe","Eurasian Collared-Dove")){
-        fy <- 1990 #5 years after the split
+        fy <- 1990 #5 years after the split and first year EUCD observed on > 3 BBS routes
       }
     }else{
       fy <- YYYY-short_time

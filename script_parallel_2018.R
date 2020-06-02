@@ -135,7 +135,7 @@ fullrun <- foreach(i = sp.rerun,
                                n_chains = n_chains,
                                n_thin = n_thin,
                                parallel = F,
-                          parameters_to_save = c("n","n3","nu","B.X","beta.X","strata","sdbeta","sdX"),
+                          parameters_to_save = c("n","n3","nu","B.X","beta.X","strata","sdbeta","sdX","alpha"),
                           modules = NULL)
      save(jags_mod, file = paste0(sp.dir, "/jags_mod_full.RData"))
      
