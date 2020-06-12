@@ -72,14 +72,20 @@ splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatc
 split_miny = c(1990,1990,1978,1978)
 names(split_miny) <- splitters
 
-to_rerun <- which(allspecies.eng %in% splitters)
+
+#
+lump = read.csv("C:/Users/biostats/Documents/R/win-library/3.6/bbsBayes/species-lump-split/lump.csv", stringsAsFactors = F)
+#lump$english_original
+
+
+to_rerun <- which(allspecies.eng %in% lump$english_out)
 
 sp.rerun <- to_rerun
 
 
 
 # Set up parallel stuff
-n_cores <- 15
+n_cores <- length(sp.rerun)
 cluster <- makeCluster(n_cores, type = "PSOCK")
 registerDoParallel(cluster)
 
