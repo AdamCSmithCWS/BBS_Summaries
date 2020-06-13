@@ -166,7 +166,7 @@ short_start = 1995 #start year for the short-term trend annual indices, may be m
 #to_rerun <- which(allspecies.eng %in% splitters)
 
 ####
-n_cores <- 40
+n_cores <- 25
 cluster <- makeCluster(n_cores,type = "PSOCK")
 registerDoParallel(cluster)
 
@@ -777,6 +777,17 @@ stopCluster(cl = cluster)
 
 
 
+
+
+# compile all estimates into single file ----------------------------------
+
+
+
+
+# generate function to select estimates by region -------------------------
+
+
+# update estimates on Google Drive ----------------------------------------
 
 
 
