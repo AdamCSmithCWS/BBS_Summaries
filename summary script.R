@@ -82,7 +82,7 @@ gen_time_3 = data.frame(species.eng = speciestemp2,
 }
 
 # qs = c(0.025,0.05,0.95,0.975)
-YYYY = 2018 ## BBS data version year
+YYYY = 2019 ## BBS data version year
 short_time = 10 #length of time for short-term trend
 
 
