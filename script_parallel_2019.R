@@ -1,29 +1,24 @@
 ###################################################
-#Full 2018 BBS run
+#Full 2019 BBS run
 
 
 
 
 
-remove(list = ls())
-n_saved_steps = 2000
-n_thin = 40
-n_burnin = 10000
-n_iter = ((n_saved_steps*n_thin)+n_burnin)
+    inits <- NULL
+    n_burnin <- 10000
+    n_saved_steps = 1200
+    n_thin = 20
+    n_iter = ((n_saved_steps*n_thin))
 n_chains = 3
 n_adapt = NULL
 
 dir.create("output", showWarnings = F)
 
-# Install Adam's version from Github (comment these three lines out if already installed:
-# install.packages("devtools")
-# library(devtools)
-# devtools::install_github("AdamCSmithCWS/bbsBayes")
-
 library(dplyr)
 library(tidyverse)
 
-library(bbsBayes)
+library(bbsBayes) #CRAN version
 library(foreach)
 library(doParallel)
 
@@ -48,6 +43,7 @@ nspecies = length(allspecies.eng)
 
 nrecs_sp = (table(stratified_data$bird_strat$AOU))
 
+set.seed(2019)
 sp.order = sample(size = nspecies,x = c(1:nspecies),replace = F)
 
 #j = 0
@@ -61,32 +57,25 @@ for(i in sp.order){
   nrecs = nrecs_sp[paste(species.num)]
   
   if(!is.na(nrecs) & nrecs > 100){
-    
+    #### alterntive approach to re running analysis without overwriting
 # if(file.exists(paste0(sp.dir, "/jags_mod_full.RData")) == F){
 #   j = j+1
 #   sp.rerun[j] = i 
 # }
   }
+
 }
 
+# split species groups that can't be separated in the early years ---------
 splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatcher")
 split_miny = c(1990,1990,1978,1978)
 names(split_miny) <- splitters
 
 
-#
-#lump = read.csv("C:/Users/biostats/Documents/R/win-library/3.6/bbsBayes/species-lump-split/lump.csv", stringsAsFactors = F)
-#lump$english_original
-
-
-#to_rerun <- which(allspecies.eng %in% lump$english_out)
-
-#sp.rerun <- to_rerun
-
 
 
 # Set up parallel stuff
-n_cores <- 30
+n_cores <- 12 #each core will run a jags model in parallel, so total requirement = n_cores*3
 cluster <- makeCluster(n_cores, type = "PSOCK")
 registerDoParallel(cluster)
 
@@ -107,29 +96,33 @@ fullrun <- foreach(i = sp.order,
     if(species.eng %in% splitters){
       miny <- split_miny[species.eng] 
     }
-    
+    ##### one-off because this species was introduced in North America in the mid-1980s - meaningless to include pre 1990
     if(species.eng == "Eurasian Collared-Dove"){
       miny <- 1990 
     }
     
   sp.dir = paste0("output/", species)
   dir.create(sp.dir, showWarnings = F)
-  
-  if(file.exists(paste0(sp.dir, "/jags_mod_full.RData"))){
-  load(paste0(sp.dir, "/jags_mod_full.RData"))
-    inits <- get_final_values(jags_mod)
-    n_burnin <- 0
-    n_saved_steps = 2000
-    n_thin = 40
-    n_iter = ((n_saved_steps*n_thin)+n_burnin)
-
-  }else{
-      inits <- NULL
-      n_burnin <- 10000
-      n_saved_steps = 2000
-      n_thin = 40
-      n_iter = ((n_saved_steps*n_thin)+n_burnin)
-    }
+  ### this if file.exists line can be uncommented if re-running using previous versions as initial values
+  ### or if re-starting analysis, in which case it only runs the model for species with no saved results
+   if(!file.exists(paste0(sp.dir, "/jags_mod_full.RData"))){
+  #if(!file.exists(paste0(sp.dir, "/jags_data.RData"))){
+    
+  ### optional approach to using previous runs as initial values
+  # load(paste0(sp.dir, "/jags_mod_full.RData"))
+  #   inits <- get_final_values(jags_mod)
+  #   n_burnin <- 0
+  #   n_saved_steps = 1200
+  #   n_thin = 20
+  #   n_iter = ((n_saved_steps*n_thin))
+  # 
+  # }else{
+  #     inits <- NULL
+  #     n_burnin <- 10000
+  #     n_saved_steps = 1200
+  #     n_thin = 20
+  #     n_iter = ((n_saved_steps*n_thin))
+  #   } #end if file.exists loop for setting initial values
 
   rm(list = c("jags_data","jags_mod"))
   nrecs = nrecs_sp[paste(species.num)]
@@ -139,7 +132,7 @@ fullrun <- foreach(i = sp.order,
     ## selecting stratified samples that remove 10% of data within each stratum
   jags_data <- prepare_jags_data(strat_data = stratified_data,
                                  species_to_run = species.eng,
-                                 min_max_route_years = 5,
+                                 min_max_route_years = 2,
                                  min_year = miny,
                                  model = model,
                                  heavy_tailed = T)
@@ -155,7 +148,7 @@ fullrun <- foreach(i = sp.order,
                                n_burnin = n_burnin,
                                n_chains = n_chains,
                                n_thin = n_thin,
-                               parallel = F,
+                               parallel = T,
                           inits = inits,
                           parameters_to_save = c("n","n3","nu","B.X","beta.X","strata","sdbeta","sdX","alpha"),
                           modules = NULL)
@@ -164,7 +157,9 @@ fullrun <- foreach(i = sp.order,
      rm(list = c("jags_mod","jags_data"))
 
   }#end if nrecs > 100
-  #}# end if results don't yet exist
+  
+  ### uncomment to restart analysis without overwriting any previous results
+  }# end if results don't yet exist
   
     }#end of full model parallel loop
     
