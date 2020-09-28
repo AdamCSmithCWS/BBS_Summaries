@@ -149,9 +149,10 @@ fullrun <- foreach(i = sp.order,
                                n_chains = n_chains,
                                n_thin = n_thin,
                                parallel = T,
+                          model_file_path = "model/GAMYE_Alt_prior.R",
                           inits = inits,
-                          parameters_to_save = c("n","n3","nu","B.X","beta.X","strata","sdbeta","sdX","alpha"),
-                          modules = NULL)
+                          #modules = NULL,
+                          parameters_to_save = c("n","n3","nu","B.X","beta.X","strata","sdbeta","sdX","alpha"))
      save(list = c("jags_mod","jags_data"), file = paste0(sp.dir, "/jags_mod_full.RData"))
      
      rm(list = c("jags_mod","jags_data"))
