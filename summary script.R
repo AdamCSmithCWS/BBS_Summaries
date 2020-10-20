@@ -155,9 +155,9 @@ if(external_drive){
 
 
 
-mx_back = 5 # set maximum extrapolation of estimates in regions with no data
+mx_back = 5 # set maximum number of years with no data at start of time-series for included strata
 exclude_backcast = FALSE # set to TRUE to exclude strata flagged in mx_back, if FALSE, strata are just flagged
-short_start = 1995 #start year for the short-term trend annual indices, may be moved back but will affect the included strata depending on the value of mx_back
+short_start = YYYY-short_time #start year for the short-term trend annual indices, may be moved back but will affect the included strata depending on the value of mx_back
 
 
 # parallel setup ----------------------------------------------------------
@@ -166,7 +166,7 @@ short_start = 1995 #start year for the short-term trend annual indices, may be m
 #to_rerun <- which(allspecies.eng %in% splitters)
 
 ####
-n_cores <- 25
+n_cores <- 30
 cluster <- makeCluster(n_cores,type = "PSOCK")
 registerDoParallel(cluster)
 
@@ -433,7 +433,7 @@ allsum <- foreach(ssi = 1:nspecies,
 
 # Generate the web-maps --------------------------------------------------------
 if(WEBMAP){
-trs_web = generate_web_maps(trs_web)
+trs_web = generate_web_maps(trs_web) #makes the webmaps and adds the webmap name column to the trend file
 }
 
 

@@ -8,6 +8,7 @@ library(ggrepel)
 
 dat_strat = stratify(by = "bbs_cws")
 
+YYYY = 2019
 
 
 allspecies.eng = dat_strat$species_strat$english
@@ -19,7 +20,7 @@ allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",rep
 
 
 
-external_drive <- TRUE
+external_drive <- FALSE
 if(external_drive){
   in_file <- paste0("d:/BBS_Summaries/estimates/trends_indices/")
   mpdrive <- paste0("d:/BBS_Summaries/WebMaps/")
@@ -40,7 +41,7 @@ for(ff in tfiles){
 }
 
 
-write.csv(all, paste0("All 2018 BBS trends.csv"),row.names = F)
+write.csv(all, paste0("All ",YYYY," BBS trends.csv"),row.names = F)
 
 web <- filter(all,For_Web == TRUE)
 
@@ -108,118 +109,118 @@ names(web) = clnms
 
 
 
-write.csv(web, paste0("2018 BBS trends for website.csv"),row.names = F)
+write.csv(web, paste0(YYYY," BBS trends for website.csv"),row.names = F)
 
 
 
-# comparing with last years trend (web only might be easier) estimates -------------------------------------
-lastyear = read.csv("2017estimates/All Canadian BBS trends2017 for web.csv",stringsAsFactors = F)
-
-
-lastyear = lastyear[,c("sp","species","geo.area","trendtype","startyear","endyear","trend","llimit","ulimit","reliab.over","reliab.prec")]
-
-lyC <- lastyear[which((lastyear$geo.area == "Canada" & lastyear$trendtype == "long-term")),]
-
-
-
-
-
-
-tyC <- web[which(web$geo.area == "Canada" & web$trendtype == "Long-term"),]
-
-
-# tcomp = bind_rows(tyC[,c("species","endyear","trend","llimit","ulimit","reliab.prec")],
-#                   lyC[,c("species","endyear","trend","llimit","ulimit","reliab.prec")])
-
-lyC2 = lyC[,c("species","endyear","trend","llimit","ulimit","reliab.prec")]
-names(lyC2)[2:ncol(lyC2)] <- paste(names(lyC2)[2:ncol(lyC2)],"17",sep = "_")
-tcomp = inner_join(tyC[,c("species","endyear","trend","llimit","ulimit","reliab.prec","reliab.over")],
-                  lyC2,
-              by = c("species"))
-
-tcomp = tcomp[-which(tcomp$species == "Eurasian Collared-Dove"),]
-tcomp$diftrend = (tcomp$trend - tcomp$trend_17)
-tcomp$diftrend.p = abs(tcomp$diftrend)/sqrt(((tcomp$reliab.prec/4)^2) + ((tcomp$reliab.prec_17/4)^2))
-
-
+# # comparing with last years trend (web only might be easier) estimates -------------------------------------
+# lastyear = read.csv("2017estimates/All Canadian BBS trends2017 for web.csv",stringsAsFactors = F)
 # 
-# tcomplab = tcomp[which(tcomp$diftrend.p > 2),]
-
-tcomplab = tcomp[which(abs(tcomp$diftrend) > 2),]
-tcomplabh = tcomp[which(abs(tcomp$diftrend) > 1),]
-
-
-ttc = ggplot(data = tcomp,aes(x = trend_17,y = trend,colour = reliab.over))+
-  geom_point()+
-  geom_abline(slope = 1, intercept = 0)+
-  scale_y_continuous(limits = c(-20,20))+
-  scale_x_continuous(limits = c(-20,20))+
-  xlab("2017 Trend Estimate")+
-  ylab("2018 Trend Estimate")+
-  geom_text_repel(data = tcomplab,aes(x = trend_17,y = trend,label = species))+
-  scale_color_brewer(type = 'qual', palette = 'Dark2')+
-  theme(legend.position = "none")
-  
-ttch = ggplot(data = tcomp[which(tcomp$reliab.over == "High"),],aes(x = trend_17,y = trend,colour = reliab.over))+
-  geom_point()+
-  geom_abline(slope = 1, intercept = 0)+
-  scale_y_continuous(limits = c(-5,5))+
-  scale_x_continuous(limits = c(-7,5))+
-  xlab("2017 Trend Estimate")+
-  ylab("2018 Trend Estimate")+
-  geom_text_repel(data = tcomplabh[which(tcomplabh$reliab.over == "High"),],aes(x = trend_17,y = trend,label = species))+
-  scale_color_brewer(type = 'qual', palette = 'Dark2')+
-  theme(legend.position = "none")
-
-pdf("trend comp 17-18.pdf",
-    width = 8.5,
-    height = 6)
-print(ttc)
-print(ttch)
-
-dev.off()
-
-
-
-# precision comparison ----------------------------------------------------
-
-tcomp$difprec = (tcomp$reliab.prec - tcomp$reliab.prec_17)
-
-
-tcomplab = tcomp[which(abs(tcomp$difprec) > 3),]
-tcomplabh = tcomp[which(abs(tcomp$difprec) > 1),]
-
-
-ttc = ggplot(data = tcomp,aes(x = reliab.prec_17,y = reliab.prec,colour = reliab.over))+
-  geom_point()+
-  geom_abline(slope = 1, intercept = 0)+
-  #scale_y_continuous(limits = c(-20,20))+
-  #scale_x_continuous(limits = c(-20,20))+
-  xlab("2017 Trend Precision")+
-  ylab("2018 Trend Precision")+
-  geom_text_repel(data = tcomplab,aes(x = reliab.prec_17,y = reliab.prec,label = species))+
-  scale_color_brewer(type = 'qual', palette = 'Dark2')+
-  theme(legend.position = "none")
-
-ttch = ggplot(data = tcomp[which(tcomp$reliab.over == "High"),],aes(x = reliab.prec_17,y = reliab.prec,colour = reliab.over))+
-  geom_point()+
-  geom_abline(slope = 1, intercept = 0)+
-  #scale_y_continuous(limits = c(-5,5))+
-  #scale_x_continuous(limits = c(-7,5))+
-  xlab("2017 Trend Precision")+
-  ylab("2018 Trend Precision")+
-  geom_text_repel(data = tcomplabh[which(tcomplabh$reliab.over == "High"),],aes(x = reliab.prec_17,y = reliab.prec,label = species))+
-  scale_color_brewer(type = 'qual', palette = 'Dark2')+
-  theme(legend.position = "none")
-
-pdf("precision comp 17-18.pdf",
-    width = 8.5,
-    height = 6)
-print(ttc)
-print(ttch)
-
-dev.off()
-
+# 
+# lastyear = lastyear[,c("sp","species","geo.area","trendtype","startyear","endyear","trend","llimit","ulimit","reliab.over","reliab.prec")]
+# 
+# lyC <- lastyear[which((lastyear$geo.area == "Canada" & lastyear$trendtype == "long-term")),]
+# 
+# 
+# 
+# 
+# 
+# 
+# tyC <- web[which(web$geo.area == "Canada" & web$trendtype == "Long-term"),]
+# 
+# 
+# # tcomp = bind_rows(tyC[,c("species","endyear","trend","llimit","ulimit","reliab.prec")],
+# #                   lyC[,c("species","endyear","trend","llimit","ulimit","reliab.prec")])
+# 
+# lyC2 = lyC[,c("species","endyear","trend","llimit","ulimit","reliab.prec")]
+# names(lyC2)[2:ncol(lyC2)] <- paste(names(lyC2)[2:ncol(lyC2)],"17",sep = "_")
+# tcomp = inner_join(tyC[,c("species","endyear","trend","llimit","ulimit","reliab.prec","reliab.over")],
+#                   lyC2,
+#               by = c("species"))
+# 
+# tcomp = tcomp[-which(tcomp$species == "Eurasian Collared-Dove"),]
+# tcomp$diftrend = (tcomp$trend - tcomp$trend_17)
+# tcomp$diftrend.p = abs(tcomp$diftrend)/sqrt(((tcomp$reliab.prec/4)^2) + ((tcomp$reliab.prec_17/4)^2))
+# 
+# 
+# # 
+# # tcomplab = tcomp[which(tcomp$diftrend.p > 2),]
+# 
+# tcomplab = tcomp[which(abs(tcomp$diftrend) > 2),]
+# tcomplabh = tcomp[which(abs(tcomp$diftrend) > 1),]
+# 
+# 
+# ttc = ggplot(data = tcomp,aes(x = trend_17,y = trend,colour = reliab.over))+
+#   geom_point()+
+#   geom_abline(slope = 1, intercept = 0)+
+#   scale_y_continuous(limits = c(-20,20))+
+#   scale_x_continuous(limits = c(-20,20))+
+#   xlab("2017 Trend Estimate")+
+#   ylab("2018 Trend Estimate")+
+#   geom_text_repel(data = tcomplab,aes(x = trend_17,y = trend,label = species))+
+#   scale_color_brewer(type = 'qual', palette = 'Dark2')+
+#   theme(legend.position = "none")
+#   
+# ttch = ggplot(data = tcomp[which(tcomp$reliab.over == "High"),],aes(x = trend_17,y = trend,colour = reliab.over))+
+#   geom_point()+
+#   geom_abline(slope = 1, intercept = 0)+
+#   scale_y_continuous(limits = c(-5,5))+
+#   scale_x_continuous(limits = c(-7,5))+
+#   xlab("2017 Trend Estimate")+
+#   ylab("2018 Trend Estimate")+
+#   geom_text_repel(data = tcomplabh[which(tcomplabh$reliab.over == "High"),],aes(x = trend_17,y = trend,label = species))+
+#   scale_color_brewer(type = 'qual', palette = 'Dark2')+
+#   theme(legend.position = "none")
+# 
+# pdf("trend comp 17-19.pdf",
+#     width = 8.5,
+#     height = 6)
+# print(ttc)
+# print(ttch)
+# 
+# dev.off()
+# 
+# 
+# 
+# # precision comparison ----------------------------------------------------
+# 
+# tcomp$difprec = (tcomp$reliab.prec - tcomp$reliab.prec_17)
+# 
+# 
+# tcomplab = tcomp[which(abs(tcomp$difprec) > 3),]
+# tcomplabh = tcomp[which(abs(tcomp$difprec) > 1),]
+# 
+# 
+# ttc = ggplot(data = tcomp,aes(x = reliab.prec_17,y = reliab.prec,colour = reliab.over))+
+#   geom_point()+
+#   geom_abline(slope = 1, intercept = 0)+
+#   #scale_y_continuous(limits = c(-20,20))+
+#   #scale_x_continuous(limits = c(-20,20))+
+#   xlab("2017 Trend Precision")+
+#   ylab("2018 Trend Precision")+
+#   geom_text_repel(data = tcomplab,aes(x = reliab.prec_17,y = reliab.prec,label = species))+
+#   scale_color_brewer(type = 'qual', palette = 'Dark2')+
+#   theme(legend.position = "none")
+# 
+# ttch = ggplot(data = tcomp[which(tcomp$reliab.over == "High"),],aes(x = reliab.prec_17,y = reliab.prec,colour = reliab.over))+
+#   geom_point()+
+#   geom_abline(slope = 1, intercept = 0)+
+#   #scale_y_continuous(limits = c(-5,5))+
+#   #scale_x_continuous(limits = c(-7,5))+
+#   xlab("2017 Trend Precision")+
+#   ylab("2018 Trend Precision")+
+#   geom_text_repel(data = tcomplabh[which(tcomplabh$reliab.over == "High"),],aes(x = reliab.prec_17,y = reliab.prec,label = species))+
+#   scale_color_brewer(type = 'qual', palette = 'Dark2')+
+#   theme(legend.position = "none")
+# 
+# pdf("precision comp 17-19.pdf",
+#     width = 8.5,
+#     height = 6)
+# print(ttc)
+# print(ttch)
+# 
+# dev.off()
+# 
 
 # Annual Indices ----------------------------------------------------------
 
@@ -237,7 +238,7 @@ for(ff in ifiles){
 }
 
 
-write.csv(alli, paste0("All 2018 BBS indices.csv"),row.names = F)
+write.csv(alli, paste0("All ",YYYY," BBS indices.csv"),row.names = F)
 
 webi <- filter(alli,For_Web == TRUE)
 
@@ -258,7 +259,7 @@ webi = webi[,clouti]
 names(webi) <- clnmsi
 
 
-write.csv(webi, paste0("2018 BBS indices for website.csv"),row.names = F)
+write.csv(webi, paste0(YYYY," BBS indices for website.csv"),row.names = F)
 
 
 
@@ -272,124 +273,124 @@ write.csv(webi, paste0("2018 BBS indices for website.csv"),row.names = F)
 
 
 # Exporting the AI indices and Trends ------------------------------------------------
-
-
-splist = read.csv("C:/Estimating_Change_in_NorthAmerican_Birds/Rosenberg et al species list.csv")
-
-
-spai = as.character(splist[which(splist$AI == "AI"),"species"])
-
-spaialt = grep(splist$species, pattern = "Flycatcher",value = T)
-
-
-spfly = grep(allspecies.eng, pattern = "Flycatcher",value = T)
-spfly = spfly[which(spfly %in% spaialt)]
-
-spai = unique(c(spai,spfly))
-
-indai = NULL
-tai = NULL
-
-for(ssp in which(allspecies.eng %in% spai)){
-  sp.e = allspecies.eng[ssp]
-  sp.f = allspecies.fre[ssp]
-  sp.n = allspecies.num[ssp]
-  spf = allspecies.file[ssp]
-  
-
-  tmp = read.csv(paste0(in_file,spf," annual indices.csv"),stringsAsFactors = F)
-  tmp$species = sp.e
-  tmp$espece = sp.f
-  tmp$bbs_num = sp.n
-  
-  
-  indai = bind_rows(indai,tmp)
- 
-
-}
-
-write.csv(indai,"AI annual indices BBS 2018.csv",row.names = F)
-
-
-
-
-allt = read.csv("All 2018 BBS trends.csv",stringsAsFactors = F)
-tai = allt[which(allt$species %in% spai),]
-
-
-
-write.csv(tai,"AI trends BBS 2018.csv",row.names = F)
-
-
-
-in_file_alt <- paste0("d:/BBS_Summaries/estimates/alternate_trends_indices/")
-indai_sm = NULL
-for(ssp in which(allspecies.eng %in% spai)){
-  sp.e = allspecies.eng[ssp]
-  sp.f = allspecies.fre[ssp]
-  sp.n = allspecies.num[ssp]
-  spf = allspecies.file[ssp]
-  
-  
-  tmp = read.csv(paste0(in_file_alt,spf,"smooth annual indices.csv"),stringsAsFactors = F)
-  tmp$species = sp.e
-  tmp$espece = sp.f
-  tmp$bbs_num = sp.n
-  
-  
-  indai_sm = bind_rows(indai_sm,tmp)
-  
-  
-
-  
-}
-write.csv(indai_sm,"AI annual indices SmoothOnly BBS 2018.csv",row.names = F)
-
-
-
-
-# extract and export raptors ---------------------------------------------------------
-
-
-spraptor = c("Merlin","American Kestrel","Cooper's Hawk","Sharp-shinned Hawk","Peregrine Falcon")
-
-indraptor = NULL
-for(ssp in which(allspecies.eng %in% spraptor)){
-  sp.e = allspecies.eng[ssp]
-  sp.f = allspecies.fre[ssp]
-  sp.n = allspecies.num[ssp]
-  spf = allspecies.file[ssp]
-  
-  
-  tmp = read.csv(paste0(in_file,spf," annual indices.csv"),stringsAsFactors = F)
-  tmp$species = sp.e
-  tmp$espece = sp.f
-  tmp$bbs_num = sp.n
-  
-  
-  indraptor = bind_rows(indraptor,tmp)
-  
-}
-write.csv(indraptor,"raptor annual indices BBS 2018.csv",row.names = F)
-
-in_file_alt <- paste0("d:/BBS_Summaries/estimates/alternate_trends_indices/")
-indraptor_sm = NULL
-for(ssp in which(allspecies.eng %in% spraptor)){
-  sp.e = allspecies.eng[ssp]
-  sp.f = allspecies.fre[ssp]
-  sp.n = allspecies.num[ssp]
-  spf = allspecies.file[ssp]
-  
-  
-  tmp = read.csv(paste0(in_file_alt,spf,"smooth annual indices.csv"),stringsAsFactors = F)
-  tmp$species = sp.e
-  tmp$espece = sp.f
-  tmp$bbs_num = sp.n
-  
-  
-  indraptor_sm = bind_rows(indraptor_sm,tmp)
-  
-}
-write.csv(indraptor_sm,"raptor annual indices SmoothOnly BBS 2018.csv",row.names = F)
-
+# 
+# 
+# splist = read.csv("C:/Estimating_Change_in_NorthAmerican_Birds/Rosenberg et al species list.csv")
+# 
+# 
+# spai = as.character(splist[which(splist$AI == "AI"),"species"])
+# 
+# spaialt = grep(splist$species, pattern = "Flycatcher",value = T)
+# 
+# 
+# spfly = grep(allspecies.eng, pattern = "Flycatcher",value = T)
+# spfly = spfly[which(spfly %in% spaialt)]
+# 
+# spai = unique(c(spai,spfly))
+# 
+# indai = NULL
+# tai = NULL
+# 
+# for(ssp in which(allspecies.eng %in% spai)){
+#   sp.e = allspecies.eng[ssp]
+#   sp.f = allspecies.fre[ssp]
+#   sp.n = allspecies.num[ssp]
+#   spf = allspecies.file[ssp]
+#   
+# 
+#   tmp = read.csv(paste0(in_file,spf," annual indices.csv"),stringsAsFactors = F)
+#   tmp$species = sp.e
+#   tmp$espece = sp.f
+#   tmp$bbs_num = sp.n
+#   
+#   
+#   indai = bind_rows(indai,tmp)
+#  
+# 
+# }
+# 
+# write.csv(indai,"AI annual indices BBS 2018.csv",row.names = F)
+# 
+# 
+# 
+# 
+# allt = read.csv("All 2018 BBS trends.csv",stringsAsFactors = F)
+# tai = allt[which(allt$species %in% spai),]
+# 
+# 
+# 
+# write.csv(tai,"AI trends BBS 2018.csv",row.names = F)
+# 
+# 
+# 
+# in_file_alt <- paste0("d:/BBS_Summaries/estimates/alternate_trends_indices/")
+# indai_sm = NULL
+# for(ssp in which(allspecies.eng %in% spai)){
+#   sp.e = allspecies.eng[ssp]
+#   sp.f = allspecies.fre[ssp]
+#   sp.n = allspecies.num[ssp]
+#   spf = allspecies.file[ssp]
+#   
+#   
+#   tmp = read.csv(paste0(in_file_alt,spf,"smooth annual indices.csv"),stringsAsFactors = F)
+#   tmp$species = sp.e
+#   tmp$espece = sp.f
+#   tmp$bbs_num = sp.n
+#   
+#   
+#   indai_sm = bind_rows(indai_sm,tmp)
+#   
+#   
+# 
+#   
+# }
+# write.csv(indai_sm,"AI annual indices SmoothOnly BBS 2018.csv",row.names = F)
+# 
+# 
+# 
+# 
+# # extract and export raptors ---------------------------------------------------------
+# 
+# 
+# spraptor = c("Merlin","American Kestrel","Cooper's Hawk","Sharp-shinned Hawk","Peregrine Falcon")
+# 
+# indraptor = NULL
+# for(ssp in which(allspecies.eng %in% spraptor)){
+#   sp.e = allspecies.eng[ssp]
+#   sp.f = allspecies.fre[ssp]
+#   sp.n = allspecies.num[ssp]
+#   spf = allspecies.file[ssp]
+#   
+#   
+#   tmp = read.csv(paste0(in_file,spf," annual indices.csv"),stringsAsFactors = F)
+#   tmp$species = sp.e
+#   tmp$espece = sp.f
+#   tmp$bbs_num = sp.n
+#   
+#   
+#   indraptor = bind_rows(indraptor,tmp)
+#   
+# }
+# write.csv(indraptor,"raptor annual indices BBS 2018.csv",row.names = F)
+# 
+# in_file_alt <- paste0("d:/BBS_Summaries/estimates/alternate_trends_indices/")
+# indraptor_sm = NULL
+# for(ssp in which(allspecies.eng %in% spraptor)){
+#   sp.e = allspecies.eng[ssp]
+#   sp.f = allspecies.fre[ssp]
+#   sp.n = allspecies.num[ssp]
+#   spf = allspecies.file[ssp]
+#   
+#   
+#   tmp = read.csv(paste0(in_file_alt,spf,"smooth annual indices.csv"),stringsAsFactors = F)
+#   tmp$species = sp.e
+#   tmp$espece = sp.f
+#   tmp$bbs_num = sp.n
+#   
+#   
+#   indraptor_sm = bind_rows(indraptor_sm,tmp)
+#   
+# }
+# write.csv(indraptor_sm,"raptor annual indices SmoothOnly BBS 2018.csv",row.names = F)
+# 
 
