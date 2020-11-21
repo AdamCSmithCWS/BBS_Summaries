@@ -108,11 +108,13 @@ model
 
 
 
-  sdobs <- 1/pow(tauobs, 0.5)
+  # sdobs <- 1/pow(tauobs, 0.5)
+  # 
+  # tauobs ~ dgamma(0.001,0.0001)
 
-  tauobs ~ dgamma(0.001,0.0001)
-
-
+	sdobs ~ dnorm(0,4) T(0,) # half normal prior with a sd = 0.5
+  
+	tauobs <- 1/(sdobs^2)
 
 	#### stratum-level effects  ######
 
@@ -152,7 +154,7 @@ model
 
 		#strata.p[i] ~ dnorm(0,taustrata)
 
-		strata[i] ~ dnorm(0,0.1) #<- STRATA + strata.p[i]
+		strata[i] ~ dnorm(0,1) #<- STRATA + strata.p[i]
 
 		expstrata[i] <- exp(strata[i])
 
@@ -182,13 +184,17 @@ model
 
 	sdX <- 1/(pow(tauX,0.5)) # ~ dunif(0,5)
 
-	taubeta ~ dgamma(2,0.2) # prior on precision of gam coefficients(
+	# taubeta ~ dgamma(2,0.2) # prior on precision of gam coefficients(
+	# 
+	# sdbeta <- 1/(pow(taubeta,0.5))
+	sdbeta ~ dnorm(0,4) T(0,) # half normal prior with a sd = 0.5
+	
+	taubeta <- 1/(sdbeta^2)
+	
 
-	sdbeta <- 1/(pow(taubeta,0.5))
-
-
-
-	for(k in 1:nknots)
+	B.X[1] <- -1*sum(B.X[2:nknots])
+	
+	for(k in 2:nknots)
 
 	{
 
@@ -196,7 +202,12 @@ model
 
 		B.X[k] ~ dnorm(0,tauX)
 
-
+	}  
+	  for(k in 1:nknots)
+	    
+	  {
+	    
+	    
 
 		for(i in 1:nstrata)
 
