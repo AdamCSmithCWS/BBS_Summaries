@@ -159,11 +159,15 @@ mx_back = 5 # set maximum number of years with no data at start of time-series f
 exclude_backcast = FALSE # set to TRUE to exclude strata flagged in mx_back, if FALSE, strata are just flagged
 short_start = YYYY-short_time #start year for the short-term trend annual indices, may be moved back but will affect the included strata depending on the value of mx_back
 
+splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatcher")
+#to_rerun <- which(allspecies.eng %in% splitters)
+
+
+
+
 
 # parallel setup ----------------------------------------------------------
 
- splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatcher")
-#to_rerun <- which(allspecies.eng %in% splitters)
 
 ####
 n_cores <- 30
@@ -185,7 +189,7 @@ allsum <- foreach(ssi = 1:nspecies,
   ss.f = allspecies.fre[ssi]
   ss.n = allspecies.num[ssi]
   ss.file = allspecies.file[ssi]
-  if(ss == "Eurasian Collared-Dove"){next}
+  #if(ss == "Eurasian Collared-Dove"){next}
   
   if(GEN_time){
     short_time = gen_time_3[which(gen_time_3$species.eng == ss),"gen_time"]
@@ -212,6 +216,12 @@ allsum <- foreach(ssi = 1:nspecies,
       }
       if(ss %in% c("Clark's Grebe","Western Grebe","Eurasian Collared-Dove")){
         fy <- 1990 #5 years after the split and first year EUCD observed on > 3 BBS routes
+      }
+      if(ss == "Cave Swallow"){
+        fy = 1985
+      }
+      if(ss == "Eurasian Collared-Dove"){
+        fy <- 1990 
       }
     }else{
       fy <- YYYY-short_time
@@ -485,7 +495,7 @@ if(trend_time == "Long-term"){
     
     mp = generate_map_abundance(abundances = inds_tr,annual = T,select = T,stratify_by = "latlong",species = paste0("BBS ",ss),map = stratmap)
     
-    panim = animate(mp, nframes = 100, fps = 7, end_pause = 15, rewind = FALSE,height = 800,width = 800)#,renderer = magick_renderer())
+    panim = animate(mp, nframes = 100, fps = 5, end_pause = 15, rewind = FALSE,height = 800,width = 800,renderer = magick_renderer())
     
     anim_save(filename = paste0(plot_header,"_animated_abundance_map.gif"),animation = panim,path = "estimates/Abundance_maps")
   }

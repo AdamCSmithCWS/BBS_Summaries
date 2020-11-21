@@ -6,7 +6,7 @@
 
 
     inits <- NULL
-    n_burnin <- 10000
+    n_burnin <- 20000
     n_saved_steps = 1200
     n_thin = 20
     n_iter = ((n_saved_steps*n_thin))
@@ -100,6 +100,9 @@ fullrun <- foreach(i = sp.order,
     if(species.eng == "Eurasian Collared-Dove"){
       miny <- 1990 
     }
+    if(species.eng == "Cave Swallow"){
+      miny <- 1985 
+    }
     
   sp.dir = paste0("output/", species)
   dir.create(sp.dir, showWarnings = F)
@@ -152,7 +155,20 @@ fullrun <- foreach(i = sp.order,
                           model_file_path = "model/GAMYE_Alt_prior.R",
                           inits = inits,
                           #modules = NULL,
-                          parameters_to_save = c("n","n3","nu","B.X","beta.X","strata","sdbeta","sdX","alpha"))
+                          parameters_to_save = c("n","n3","nu","B.X","beta.X","strata","sdbeta","sdX","alpha","sdobs","sdnoise"))
+    
+    #my_sso <- shinystan::launch_shinystan(shinystan::as.shinystan(jags_mod$samples, model_name = "My_tricky_model"))
+    # jags_mod_obs <- run_model(jags_data = jags_data,
+    #                       n_iter = n_iter,
+    #                       n_burnin = 0,
+    #                       n_chains = n_chains,
+    #                       n_thin = n_thin,
+    #                       parallel = T,
+    #                       model_file_path = "model/GAMYE_Alt_prior.R",
+    #                       inits = inits,
+    #                       #modules = NULL,
+    #                       parameters_to_save = c("nu","n3","B.X","beta.X","strata","sdbeta","sdX","alpha","obs","sdobs","sdnoise"))
+     my_sso <- shinystan::launch_shinystan(shinystan::as.shinystan(jags_mod$samples, model_name = "My_tricky_model"))
      save(list = c("jags_mod","jags_data"), file = paste0(sp.dir, "/jags_mod_full.RData"))
      
      rm(list = c("jags_mod","jags_data"))
