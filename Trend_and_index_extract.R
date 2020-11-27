@@ -7,16 +7,19 @@ library(tidyverse)
 YYYY = 2019
 
 
-allspecies.eng = dat_strat$species_strat$english
-allspecies.fre = dat_strat$species_strat$french
-allspecies.num = dat_strat$species_strat$sp.bbs
+# allspecies.eng = dat_strat$species_strat$english
+# allspecies.fre = dat_strat$species_strat$french
+# allspecies.num = dat_strat$species_strat$sp.bbs
 
+pathstrats = system.file("composite-regions",
+                         package = "bbsBayes")
+strats = read.csv(paste0(pathstrats,"/stratcan.csv"))
 
 
 all = read.csv(paste0("All ",YYYY," BBS trends.csv"))
 
- # all$Strata_included <- gsub(x = all$Strata_included,pattern = " ; ",fixed = T,replacement = " ")
- # all$Strata_excluded <- gsub(x = all$Strata_excluded,pattern = " ; ",fixed = T,replacement = " ")
+ all$Strata_included <- gsub(x = all$Strata_included,pattern = " ; ",fixed = T,replacement = " - ")
+ all$Strata_excluded <- gsub(x = all$Strata_excluded,pattern = " ; ",fixed = T,replacement = " - ")
  # 
  # write.csv(all,paste0("All ",YYYY," BBS trends.csv"),row.names = F)
 
@@ -30,56 +33,128 @@ web$prob_decrease_25_50_percent = web$prob_decrease_0_percent - (web$prob_decrea
 web$prob_increase_0_33_percent = web$prob_increase_0_percent - web$prob_increase_33_percent 
 web$prob_increase_33_100_percent = web$prob_increase_0_percent - (web$prob_increase_0_33_percent + web$prob_increase_100_percent) 
 
-clout = c("bbs_num",
-          "species",
-          "espece",
-          "Region_alt",
-          "Trend_Time",
-          "Start_year",
-          "End_year",
-          "Trend",
-          "Trend_Q0.025",
-          "Trend_Q0.975",
-          "Reliability",
-          "Width_of_95_percent_Credible_Interval",
-          "reliab.cov",
-          "backcast_flag",
-          "prob_decrease_0_percent",
-          "prob_increase_0_percent",
-          "prob_decrease_50_percent",
-          "prob_decrease_25_50_percent",
-          "prob_decrease_0_25_percent",
-          "prob_increase_0_33_percent",
-          "prob_increase_33_100_percent",
-          "prob_increase_100_percent",
-          "Percent_Change",
-          "Percent_Change_Q0.025",
-          "Percent_Change_Q0.975",
-          "Number_of_Routes",
-          "Strata_included",
-          "Strata_excluded",
-          "mapfile")
+web = web[which(web$Region_type != "bcr"),]
+hdrsT = read.csv("2017estimates/web_headers_xwalk.csv")
 
-clnms = c("sp","species","espece","geo.area","trendtype",
-          "startyear","endyear","trend",
-          "llimit","ulimit","reliab.over",
-          "reliab.prec","reliab.cov","reliab.pool",
-          "p.decrease","p.increase","p.d50","pd50.25",
-          "pd25.0","pi0.33","pi33.100","pi100",
-          "percent.change","percent.change.llimit",
-          "percent.change.ulimit","nroutesduringtrend",
-          "strata.inc","st.excl.long","mapfile")
 
+
+clout = hdrsT$original
+clnms = hdrsT$upload
+web = web[,clout]
+
+
+# create and save lists of web content strings ----------------------------
+
+# trendload = read.csv(c("2017estimates/Trend_Load_Table_2019.csv"))
+
+### region names and types
+regionx = read.csv("2017estimates/regional_Xwalk.csv")
+
+web = inner_join(web,regionx,by = c("Region","Region_type")) #drops the BCR-7 province rows
+web$Region_type <- web$region.type
+web$Region <- web$Geographic.area
+
+stratax = unique(regionx[which(regionx$Region_type == "stratum"),c("Geographic.area","Region")])
+
+
+stincmat_ex = web$Strata_excluded %>% str_split_fixed(pattern = " - ",n = nrow(stratax))
+stincmat_in = web$Strata_included %>% str_split_fixed(pattern = " - ",n = nrow(stratax))
+
+for(i in 1:nrow(stratax)){
+        ii = stratax[i,"Region"]
+        jj = stratax[i,"Geographic.area"]
+        
+stincmat_ex = gsub(x = stincmat_ex,pattern = ii,replacement = jj)
+stincmat_in = gsub(x = stincmat_in,pattern = ii,replacement = jj)
+
+}
+
+
+for(j in 1:nrow(web)){
+        tmp = stincmat_ex[j,]
+        tmp = tmp[which(tmp != "")]
+        web[j,"Strata_excluded"] <- paste(tmp,collapse = " - ")
+        
+        tmp2 = stincmat_in[j,]
+        tmp2 = tmp2[which(tmp2 != "")]
+        web[j,"Strata_included"] <- paste(tmp2,collapse = " - ")
+        rm(list = c("tmp","tmp2"))
+}
+
+# fix significant digits --------------------------------------------------
+numcols = which(unlist(lapply(web,class)) == "numeric")
+for(j in numcols){
+        web[,j] <- round(signif(web[,j],3),3)
+}
+
+
+
+# fix species names table -------------------------------------------------
+
+spload = read.csv("2017estimates/Bird_Load_Table_constant.csv")
+
+
+
+s1 = c("Dark-eyed Junco (all forms)",
+       "Northern Flicker (all forms)",
+       "Redpoll (Common/Hoary)",
+       "Red-tailed Hawk (all forms)",
+       "Sapsuckers (Yellow-bellied/Red-naped/Red-breasted/Williamson's)",
+       "Yellow-rumped Warbler (all forms)",
+       "McCown's Longspur")
+s2 = c("Dark-eyed Junco",
+       "Northern Flicker",
+       "Unidentified Common/Hoary Redpoll",
+       "Red-tailed Hawk",
+       "Sapsuckers (Yellow-bellied/Red-naped/Red-breasted)",
+       "Yellow-rumped Warbler",
+       "Thick-billed Longspur")
+
+# web = web[-which(web$species == "Western Grebe" &
+#                          web$bbs_num == 10),]
+
+for(i in 1:length(s1)){
+web[which(web$species == s1[i]),"species"] <- s2[i]
+}
+
+splist = unique(web[,c("species","bbs_num")])
+
+splist = left_join(splist,spload,by = c("species" = "English_Name",
+                                        "bbs_num" = "BBS_Number"))
+
+print(paste("merge will drop",splist[which(is.na(splist$Sort_Order)),"species"]))
+
+splist = unique(web[,c("species","bbs_num")])
+
+spload2 = inner_join(spload,splist,c("English_Name" = "species",
+                                    "BBS_Number" = "bbs_num"))
+miss_sp = spload$English_Name[-which(spload$English_Name %in% spload2$English_Name)]
+ print(paste("no trend data for",miss_sp))
+ 
+
+# retain only species in the web species list -----------------------------
+
+web = inner_join(web,spload[,c("English_Name","BBS_Number")],by = c("species" = "English_Name",
+                                                                    "bbs_num" = "BBS_Number")) 
+ 
+ # fix trend_time names ----------------------------------------------------
+ 
+ web$Trend_Time <- tolower(web$Trend_Time)
+ 
+ 
+ 
+#replace names of web file
 web = web[,clout]
 names(web) = clnms
 
 
-
-
-write.csv(web, paste0(YYYY," BBS trends for CWS website.csv"),row.names = F)
+write.csv(web, paste0("Trend_Load_Table_",YYYY+1,".csv"),row.names = F)
 
 
 # Annual Indices ----------------------------------------------------------
+hdrsI = read.csv("2017estimates/web_headers_xwalk_indices.csv")
+clouti = hdrsI$original
+clnmsi = hdrsI$upload
 
 
 
@@ -87,31 +162,73 @@ write.csv(web, paste0(YYYY," BBS trends for CWS website.csv"),row.names = F)
 
 alli = read.csv(paste0("All ",YYYY," BBS indices.csv"))
 
-# alli$Strata_included <- gsub(x = alli$Strata_included,pattern = " ; ",fixed = T,replacement = " ")
-# alli$Strata_excluded <- gsub(x = alli$Strata_excluded,pattern = " ; ",fixed = T,replacement = " ")
+# alli$Strata_included <- gsub(x = alli$Strata_included,pattern = " ; ",fixed = T,replacement = " - ")
+# alli$Strata_excluded <- gsub(x = alli$Strata_excluded,pattern = " ; ",fixed = T,replacement = " - ")
 # 
 # write.csv(alli,paste0("All ",YYYY," BBS indices.csv"),row.names = F)
 
 webi <- filter(alli,For_Web == TRUE)
 
-clouti =  c("bbs_num",
-                   "species",
-                   "espece",
-                   "Region_alt",
-                   "Trend_Time",
-                   "Year",
-                   "Index",
-                   "Index_q_0.025",
-                   "Index_q_0.975")
-clnmsi = c("sp","species","espece","geo.area","trendtype",
-           "year","an.index",
-           "llimit","ulimit")
+# webi = webi[-which(webi$species == "Western Grebe (Clark's/Western)" &
+#                            webi$bbs_num == 12),]
+
+for(i in 1:length(s1)){
+        web[which(web$species == s1[i]),"species"] <- s2[i]
+}
+
+
+
+webi = inner_join(webi,spload[,c("English_Name","BBS_Number")],by = c("species" = "English_Name",
+                                                                    "bbs_num" = "BBS_Number")) 
+
+
+
+
+# fixing region names -----------------------------------------------------
+
+webi = inner_join(webi,regionx,by = c("Region","Region_type")) #drops the BCR-7 province rows
+webi$Region_type <- webi$region.type
+webi$Region <- webi$Geographic.area
+
+
+# fix significant digits --------------------------------------------------
+numcols = which(unlist(lapply(webi,class)) == "numeric")
+for(j in numcols){
+        webi[,j] <- signif(webi[,j],3)
+}
+
+
+# fix trend_time names ----------------------------------------------------
+
+webi$Trend_Time <- tolower(webi$Trend_Time)
 
 webi = webi[,clouti]
 names(webi) <- clnmsi
 
 
-write.csv(webi, paste0(YYYY," BBS indices for CWS website.csv"),row.names = F)
+write.csv(webi, paste0("Annual_Load_Table_",YYYY+1,".csv"),row.names = F)
+
+
+
+
+
+
+# END WEBSITE UPLOAD SUMMARY ----------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
