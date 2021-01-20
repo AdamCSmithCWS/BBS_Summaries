@@ -162,6 +162,8 @@ clnmsi = hdrsI$upload
 
 alli = read.csv(paste0("All ",YYYY," BBS indices.csv"))
 
+
+
 # alli$Strata_included <- gsub(x = alli$Strata_included,pattern = " ; ",fixed = T,replacement = " - ")
 # alli$Strata_excluded <- gsub(x = alli$Strata_excluded,pattern = " ; ",fixed = T,replacement = " - ")
 # 
