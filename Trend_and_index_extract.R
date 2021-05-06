@@ -175,7 +175,7 @@ webi <- filter(alli,For_Web == TRUE)
 #                            webi$bbs_num == 12),]
 
 for(i in 1:length(s1)){
-        web[which(web$species == s1[i]),"species"] <- s2[i]
+        webi[which(webi$species == s1[i]),"species"] <- s2[i]
 }
 
 
@@ -212,6 +212,12 @@ write.csv(webi, paste0("Annual_Load_Table_",YYYY+1,".csv"),row.names = F)
 
 
 
+### checks
+
+n_ind <- webi %>% distinct(species,`Geographic Area`,trendtime)
+n_t <- web %>% distinct(`bbs number`,`Geographic area`,`Time Period Type`)
+
+if(nrow(n_t) != nrow(n_ind)){stop("Something is missing from index or trend file")}
 
 
 
