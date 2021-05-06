@@ -24,11 +24,15 @@ external_drive <- FALSE # are the species output files stored on an external dri
 # set to FALSE if stored in project working directory
 
 w_ext_dr <- "d" # drive letter to identify location of external drive
+
+
 if(external_drive){
-  in_file <- paste0("d:/BBS_Summaries/estimates/trends_indices/")
-  mpdrive <- paste0("d:/BBS_Summaries/WebMaps/")
+  in_file <- paste0(w_ext_dr,":/BBS_Summaries/estimates/trends_indices/")
+  smooth_in_file <- paste0(w_ext_dr,":/BBS_Summaries/estimates/alternate_trends_indices/")
+  mpdrive <- paste0(w_ext_dr,":/BBS_Summaries/WebMaps/")
   }else{
   in_file <- paste0("estimates/trends_indices/")
+  smooth_in_file <- paste0("estimates/alternate_trends_indices/")
   mpdrive <- paste0("WebMaps/")
 }
 
@@ -264,6 +268,46 @@ names(webi) <- clnmsi
 
 write.csv(webi, paste0(YYYY," BBS indices for website.csv"),row.names = F)
 
+
+
+# Smoothed Annual Indices ----------------------------------------------------------
+
+
+
+smooth_ifiles = list.files(pattern="indices[.]csv$", path=smooth_in_file, full.names=TRUE)
+
+
+alli = NULL
+for(ff in smooth_ifiles){
+  tmp = read.csv(ff,stringsAsFactors = F)
+  
+  alli = bind_rows(alli,tmp)
+  
+}
+
+
+write.csv(alli, paste0("All ",YYYY," BBS smoothed indices.csv"),row.names = F)
+
+webi <- filter(alli,For_Web == TRUE)
+
+clouti =  c("bbs_num",
+            "species",
+            "espece",
+            "Region_alt",
+            "Trend_Time",
+            "Year",
+            "Index",
+            "Index_q_0.025",
+            "Index_q_0.975")
+clnmsi = c("sp","species","espece","geo.area","trendtype",
+           "year","an.index",
+           "llimit","ulimit")
+
+webi = webi[,clouti]
+names(webi) <- clnmsi
+
+
+write.csv(webi, paste0(YYYY," BBS smoothed indices for website.csv"),row.names = F)
 
 
 

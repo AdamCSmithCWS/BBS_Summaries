@@ -238,9 +238,35 @@ if(nrow(n_t) != nrow(n_ind)){stop("Something is missing from index or trend file
 
 
 
+# Smoothed Annual Indices -------------------------------------------------
+
+
+
+alli_smooth = read.csv(paste0("All ",YYYY," BBS smoothed indices.csv"))
+
 
 
 # Export regional trends and indices ----------------------
+
+
+
+tmp = filter(alli_smooth,Region_type %in% c("continental","national"))
+write.csv(tmp,paste0(YYYY,"All BBS smoothed indices continent and national.csv"),row.names = F)
+
+tmp = filter(alli_smooth,Region_type %in% c("prov_state"))
+write.csv(tmp,paste0(YYYY,"All BBS smoothed indices prov_state.csv"),row.names = F)
+
+tmp = filter(alli_smooth,Region_type %in% c("bcr_by_country","bcr"))
+write.csv(tmp,paste0(YYYY,"All BBS smoothed indices full_bcr and bcr_by_country.csv"),row.names = F)
+
+tmp = filter(alli_smooth,Region_type %in% c("stratum"),str_detect(Region,pattern = "^US"),
+             Trend_Time == "Long-term")
+write.csv(tmp,paste0(YYYY,"All BBS smoothed indices strata in USA.csv"),row.names = F)
+tmp = filter(alli_smooth,Region_type %in% c("stratum"),str_detect(Region,pattern = "^CA"),
+             Trend_Time == "Long-term")
+write.csv(tmp,paste0(YYYY,"All BBS smoothed indices strata in Canada.csv"),row.names = F)
+
+
 
 
 tmp = filter(alli,Region_type %in% c("continental","national"))
