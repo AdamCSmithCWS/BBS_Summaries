@@ -20,7 +20,10 @@ allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",rep
 
 
 
-external_drive <- FALSE
+external_drive <- FALSE # are the species output files stored on an external drive
+# set to FALSE if stored in project working directory
+
+w_ext_dr <- "d" # drive letter to identify location of external drive
 if(external_drive){
   in_file <- paste0("d:/BBS_Summaries/estimates/trends_indices/")
   mpdrive <- paste0("d:/BBS_Summaries/WebMaps/")
