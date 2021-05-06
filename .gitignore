@@ -16,6 +16,7 @@ All 2018 BBS indices.csv
 *output/
 *WebMaps/
 *estimates/
+*additional_output/
 
 # Example code in package build process
 *-Ex.R

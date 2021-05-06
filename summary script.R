@@ -64,21 +64,24 @@ allspecies.num = dat_strat$species_strat$sp.bbs
 allspecies.file = str_replace_all(str_replace_all(allspecies.eng,"[:punct:]",replacement = ""),
                                   "\\s",replacement = "_")
 
-# speciestemp2 = c("Ferruginous Hawk",
-#                  "Band-tailed Pigeon",
-#                  "Lesser Yellowlegs",
-#                  "Great Blue Heron",
-#                  "Short-eared Owl",
-#                  "Golden-winged Warbler")
+
 COSEWIC = T
 if(COSEWIC){
 rollTrend = "Trend"
 }
 
-GEN_time = F
+
+# Alternate generation times ----------------------------------------------
+
+
+GEN_time = TRUE
 if(GEN_time){
+  speciestemp2 = c("Ferruginous Hawk",
+                   "Band-tailed Pigeon",
+                   "Short-eared Owl",
+                   "Horned Grebe")
 gen_time_3 = data.frame(species.eng = speciestemp2,
-                        gen_time = c(21,13,12,22,12,10))
+                        gen_time = c(21,13,12,13))
 }
 
 # qs = c(0.025,0.05,0.95,0.975)
@@ -164,26 +167,33 @@ splitters = c("Clark's Grebe","Western Grebe","Alder Flycatcher","Willow Flycatc
 
 
 
-
+animated_maps = FALSE
+### set to true if animated gif abundance maps are desired
 
 # parallel setup ----------------------------------------------------------
 
 
 ####
-n_cores <- 30
-cluster <- makeCluster(n_cores,type = "PSOCK")
-registerDoParallel(cluster)
+# n_cores <- 30
+# cluster <- makeCluster(n_cores,type = "PSOCK")
+# registerDoParallel(cluster)
+# 
+# nspecies <- length(allspecies.eng)
+# 
+# 
+# 
+# allsum <- foreach(ssi = 1:nspecies,
+#                   .packages = pkgs,
+#                   .inorder = FALSE,
+#                   .errorhandling = "pass") %dopar% {
+################ end parallel full setup
 
-nspecies <- length(allspecies.eng)
 
 
+# alternate generation time loop ------------------------------------------
 
-allsum <- foreach(ssi = 1:nspecies,
-                  .packages = pkgs,
-                  .inorder = FALSE,
-                  .errorhandling = "pass") %dopar% {
-
-# for(ssi in which(allspecies.eng %in% speciestemp2)){
+### uncomment next line to run just selection of species with different generation times
+ for(ssi in which(allspecies.eng %in% speciestemp2)){
  
   ss = allspecies.eng[ssi]
   ss.f = allspecies.fre[ssi]
@@ -484,7 +494,7 @@ if(trend_time == "Long-term"){
 
 # Abundance maps and animated gifs ----------------------------------------
 
-  if(trend_time == "Long-term"){
+  if(trend_time == "Long-term" & animated_maps){
     
     # mp = generate_map_abundance(abundances = inds_vis,annual = T,select = T,stratify_by = "latlong",species = paste0("BBS ",ss),map = stratmap)
     # 
