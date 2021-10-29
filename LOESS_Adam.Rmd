@@ -1,0 +1,77 @@
+---
+title: "LOESS"
+author: "Danielle Ethier"
+date: "14/10/2021"
+output: html_document
+---
+
+General code to be used by Birds Canada and ECCC to generate LOESS smoothing on trend indices across all years. 
+
+In this example, my output dataframe is called *index.out* and is species and seasonally specific for all years across a program (e.g., American Robin, fall season, CMMN-LPBO-DET).
+
+Load required library
+```{r libraries}
+
+library(tidyverse)
+
+```
+
+Code to create loess index for plotting in NatureCounts. Change dataframe name as needed. 
+```{r LOESS code sample}
+
+LOESS = loess(index~year, data=index.out, span=0.55, na.action = na.exclude)
+
+#add the predicted LOESS values back to the original dataframe with a new column name
+index.out$indexloess<-predicted(LOESS) ## should this be predict(LOESS)  ?
+
+# I added a function that can be used within a grouped mutate function below
+loess_func <- function(i,y){
+  tmp <- loess(i~y, 
+               span=0.55, na.action = na.exclude)
+  preds <- predict(tmp)
+  return(preds)
+}
+                                                  
+```                                                  
+     
+     
+     
+     
+```{r BBS}
+
+for(fl in c("full_bcr and bcr_by_country",
+            "prov_state",
+            "continent and national","strata in Canada","strata in USA")){
+  # reading in the files of annual indices
+  fltm = paste0("2019All BBS indices ",fl,".csv")
+  inds = read.csv(fltm)
+  
+  indst <- inds %>%
+    group_by(Region, species, Trend_Time) %>% # grouping by the relevant region, species, version, etc.
+    mutate(indexloess = loess_func(Index,Year)) # adding the loess smooth column
+ 
+  #writing a copy of the original annual index file that has the extra indexloess column
+    fltm = paste0("2019All BBS indices ",fl,"loess.csv")
+    write.csv(indst,file = fltm)
+    
+    # optional test plot that selects ~10 species worth of results to plot
+    # just to confirm that this is working as expected
+    test_reg <- unique(indst$Region)[1]
+    inds_tst <- filter(indst,Trend_Time == "Long-term", Region == test_reg)
+    test_plot <- ggplot(data = inds_tst[1:500,],aes(x = Year, y = Index,group = species))+
+      geom_ribbon(aes(ymin = Index_q_0.025,ymax = Index_q_0.975),alpha = 0.2)+
+      geom_line()+
+      geom_line(aes(x = Year,y = indexloess),colour = "red")+
+      facet_wrap(~species,nrow = 4,ncol = 4,scales = "free")
+    pdf(file = paste0("test_plot ",fl,"loess.pdf"))
+    print(test_plot)
+    dev.off()
+    ## end optional test plot
+    
+    rm(list = c("fltm","inds"))
+  
+              }
+
+```
+                                                  
+                                                  
